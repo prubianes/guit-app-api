@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 
 import { prisma } from '../libs/prisma';
+import { INVALID_USER_ID, UNABLE_TO_CREATE_USER, USER_NOT_FOUND } from '../libs/errorMessages';
+
 import { User } from '@prisma/client';
 
 const user = new Hono();
@@ -27,7 +29,7 @@ user.post('/', async (c) => {
             },
         });
     } catch (error) {
-        throw new HTTPException(403, {message: "Unable to create a new user"});
+        throw new HTTPException(403, {message: UNABLE_TO_CREATE_USER});
     }
     return c.json(user_created);
 })
@@ -44,5 +46,87 @@ user.get('/', async (c) => {
     const users = await prisma.user.findMany();
     return c.json(users);
 })
+
+/**
+ * Endpoint to get a user by id.
+ * 
+ * @async
+ * @function
+ * @param {Context} c - The context object containing the request and response.
+ * @returns {Promise<Response>} JSON response with the user data.
+ * @throws {HTTPException} If the user is not found.
+ */
+user.get('/:id', async (c) => {
+    const userId = parseInt(c.req.param('id'), 10);
+    if (isNaN(userId)) {
+        throw new HTTPException(400, {message: INVALID_USER_ID});
+    }
+    const user = await prisma.user.findUnique({
+        where: {
+            id: userId,
+        },
+    });
+    if (!user) {
+        throw new HTTPException(404, {message: USER_NOT_FOUND});
+    }
+    return c.json(user);
+});
+
+/**
+ * Endpoint to update a user by id.
+ * 
+ * @async
+ * @function
+ * @param {Context} c - The context object containing the request and response.
+ * @returns {Promise<Response>} JSON response with the updated user data.
+ * @throws {HTTPException} If the user is not found.
+ */
+user.put('/:id', async (c) => {
+    const userId = parseInt(c.req.param('id'), 10);
+    if (isNaN(userId)) {
+        throw new HTTPException(400, {message: INVALID_USER_ID});
+    }
+    const requestBody = await c.req.json<User>();
+    const user = await prisma.user.update({
+        where: {
+            id: userId,
+        },
+        //TODO - Add validation for the request body and the rest of the fields
+        data: {
+            name: requestBody.name,
+            email: requestBody.email,
+            password: requestBody.password,
+        },
+    });
+    if (!user) {
+        throw new HTTPException(404, {message: USER_NOT_FOUND});
+    }
+    return c.json(user);
+});
+
+/**
+ * Endpoint to delete a user by id.
+ * 
+ * @async
+ * @function
+ * @param {Context} c - The context object containing the request and response.
+ * @returns {Promise<Response>} JSON response with the deleted user data.
+ * @throws {HTTPException} If the user is not found.
+ */
+user.delete('/:id', async (c) => {
+    const userId = parseInt(c.req.param('id'), 10);
+    if (isNaN(userId)) {
+        throw new HTTPException(400, {message: INVALID_USER_ID});
+    }
+    const user = await prisma.user.delete({
+        where: {
+            id: userId,
+        },
+    });
+    if (!user) {
+        throw new HTTPException(404, {message: USER_NOT_FOUND});
+    }
+    return c.json(user);
+});
 
 export default user;
