@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
-import user from './user/route';
+import user from './routes/users.routes';
 import { HTTPException } from 'hono/http-exception';
+import account from './routes/account.routes';
 
 const app = new Hono()
 
@@ -23,7 +24,20 @@ app.onError((err, c) => {
     });
 });
 
-// Routes
-app.route('/user', user)
+/**
+ * Handles requests to non-existent routes.
+ * 
+ * @param {Context} c - The context object containing the request and response. 
+ * @returns {Promise<Response>} JSON response with the error details.
+ */
+app.notFound((c) => {
+    return c.json({
+        statusCode: 404,
+        message: 'Not found'
+    });
+});
 
+// Routes
+app.route('/user', user);
+app.route('/user', account);
 export default app;

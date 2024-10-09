@@ -19,19 +19,18 @@ const user = new Hono();
  */
 user.post('/', async (c) => {
     const requestBody = await c.req.json<User>();
-    let user_created = null;
     try {
-        user_created = await prisma.user.create({
+        let user_created = await prisma.user.create({
             data: {
                 name: requestBody.name,
                 email: requestBody.email,
                 password: requestBody.password,
             },
         });
+        return c.json(user_created);
     } catch (error) {
         throw new HTTPException(403, {message: UNABLE_TO_CREATE_USER});
     }
-    return c.json(user_created);
 })
 
 /**
@@ -64,6 +63,15 @@ user.get('/:id', async (c) => {
     const user = await prisma.user.findUnique({
         where: {
             id: userId,
+        },
+        select: {
+            name: true,
+            email: true,
+            createdAt: true,
+            updatedAt: true,
+            accounts: true,
+            transactions: true,
+            budgets: true,
         },
     });
     if (!user) {
