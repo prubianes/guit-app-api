@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 
 import { prisma } from '../libs/prisma';
-import { INVALID_USER_ID, UNABLE_TO_CREATE_USER, USER_NOT_FOUND } from '../libs/errorMessages';
+import { USER_ERRORS } from '../libs/errorMessages';
 
 import { User } from '@prisma/client';
 
@@ -29,7 +29,7 @@ user.post('/', async (c) => {
         });
         return c.json(user_created);
     } catch (error) {
-        throw new HTTPException(403, {message: UNABLE_TO_CREATE_USER});
+        throw new HTTPException(403, {message: USER_ERRORS.NOT_FOUND});
     }
 })
 
@@ -42,9 +42,13 @@ user.post('/', async (c) => {
  * @returns {Promise<Response>} JSON response with all the users data.
  */
 user.get('/', async (c) => {
-    const users = await prisma.user.findMany();
-    return c.json(users);
-})
+    try {
+        const users = await prisma.user.findMany();
+        return c.json(users);
+    } catch (error) {
+        throw new HTTPException(500, {message: USER_ERRORS.RETRIEVE_ERROR});
+    }
+});
 
 /**
  * Endpoint to get a user by id.
@@ -58,7 +62,7 @@ user.get('/', async (c) => {
 user.get('/:id', async (c) => {
     const userId = parseInt(c.req.param('id'), 10);
     if (isNaN(userId)) {
-        throw new HTTPException(400, {message: INVALID_USER_ID});
+        throw new HTTPException(400, {message: USER_ERRORS.INVALID_ID});
     }
     const user = await prisma.user.findUnique({
         where: {
@@ -75,7 +79,7 @@ user.get('/:id', async (c) => {
         },
     });
     if (!user) {
-        throw new HTTPException(404, {message: USER_NOT_FOUND});
+        throw new HTTPException(404, {message: USER_ERRORS.NOT_FOUND});
     }
     return c.json(user);
 });
@@ -92,7 +96,7 @@ user.get('/:id', async (c) => {
 user.put('/:id', async (c) => {
     const userId = parseInt(c.req.param('id'), 10);
     if (isNaN(userId)) {
-        throw new HTTPException(400, {message: INVALID_USER_ID});
+        throw new HTTPException(400, {message: USER_ERRORS.INVALID_ID});
     }
     const requestBody = await c.req.json<User>();
     const user = await prisma.user.update({
@@ -107,7 +111,7 @@ user.put('/:id', async (c) => {
         },
     });
     if (!user) {
-        throw new HTTPException(404, {message: USER_NOT_FOUND});
+        throw new HTTPException(404, {message: USER_ERRORS.NOT_FOUND});
     }
     return c.json(user);
 });
@@ -124,7 +128,7 @@ user.put('/:id', async (c) => {
 user.delete('/:id', async (c) => {
     const userId = parseInt(c.req.param('id'), 10);
     if (isNaN(userId)) {
-        throw new HTTPException(400, {message: INVALID_USER_ID});
+        throw new HTTPException(400, {message: USER_ERRORS.INVALID_ID});
     }
     const user = await prisma.user.delete({
         where: {
@@ -132,7 +136,7 @@ user.delete('/:id', async (c) => {
         },
     });
     if (!user) {
-        throw new HTTPException(404, {message: USER_NOT_FOUND});
+        throw new HTTPException(404, {message: USER_ERRORS.NOT_FOUND});
     }
     return c.json(user);
 });

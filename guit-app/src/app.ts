@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import user from './routes/users.routes';
 import { HTTPException } from 'hono/http-exception';
 import account from './routes/account.routes';
+import categories from './routes/categories.routes';
 
 const app = new Hono()
 
@@ -40,4 +41,5 @@ app.notFound((c) => {
 // Routes
 app.route('/user', user);
 app.route('/user', account);
+app.route('/category', categories);
 export default app;
