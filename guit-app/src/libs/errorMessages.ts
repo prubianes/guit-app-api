@@ -24,6 +24,16 @@ export const CATEGORY_ERRORS = {
     RETRIEVE_ALL_ERROR: 'Error retrieving categories'
 };
 
+export const TRANSACTION_ERRORS = {
+    NOT_FOUND: 'Transactions not found',
+    RETRIEVAL_ERROR: 'Error retrieving transactions',
+    CREATION_ERROR: 'Error creating transaction',
+    INVALID_USER_ID: 'Invalid user ID',
+    INVALID_REQUEST_BODY: 'Invalid request body',
+    INVALID_TRANSACTION_DATA: 'Invalid transaction data',
+    INVALID_ID: 'Invalid transaction ID'
+};
+
 export const DATA_ERRORS = {
     NOT_FOUND: 'Requested data not found'
 };

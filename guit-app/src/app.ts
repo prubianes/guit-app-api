@@ -42,4 +42,5 @@ app.notFound((c) => {
 app.route('/user', user);
 app.route('/user', account);
 app.route('/category', categories);
+
 export default app;
