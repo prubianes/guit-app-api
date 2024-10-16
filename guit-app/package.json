@@ -1,7 +1,8 @@
 {
   "name": "guit-app",
   "scripts": {
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.1",
@@ -11,6 +12,7 @@
   "devDependencies": {
     "@types/node": "^20.11.17",
     "prisma": "5.20.0",
-    "tsx": "^4.7.1"
+    "tsx": "^4.7.1",
+    "vitest": "^2.1.3"
   }
 }

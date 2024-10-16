@@ -3,6 +3,7 @@ import user from './routes/users.routes';
 import { HTTPException } from 'hono/http-exception';
 import account from './routes/account.routes';
 import categories from './routes/categories.routes';
+import transaction from './routes/transactions.routes';
 
 const app = new Hono()
 
@@ -42,5 +43,6 @@ app.notFound((c) => {
 app.route('/user', user);
 app.route('/user', account);
 app.route('/category', categories);
+app.route('/user', transaction);
 
 export default app;

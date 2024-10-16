@@ -29,7 +29,8 @@ user.post('/', async (c) => {
         });
         return c.json(user_created);
     } catch (error) {
-        throw new HTTPException(403, {message: USER_ERRORS.NOT_FOUND});
+        console.log(error);
+        throw new HTTPException(403, {message: USER_ERRORS.CREATE_ERROR});
     }
 })
 

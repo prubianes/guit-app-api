@@ -7,6 +7,11 @@ import { ACCOUNT_ERRORS, TRANSACTION_ERRORS } from "../libs/errorMessages";
 
 const transaction = new Hono();
 
+const TRANSACTION_TYPES = {
+    EXPENSE: 'expense',
+    INCOME: 'income'
+};
+
 /**
  *  Endpoint to get all the transactions for an user.
  * 
@@ -69,7 +74,7 @@ transaction.post('/:id/transactions', async (c) => {
 
     const { accountId, categoryId, amount, type, date, description } = requestBody;
 
-    if (!accountId || !categoryId || isNaN(amount) || !['expense', 'income'].includes(type)) {
+    if (!accountId || !categoryId || isNaN(amount) || ![TRANSACTION_TYPES.EXPENSE, TRANSACTION_TYPES.INCOME].includes(type)) {
         throw new HTTPException(400, { message: TRANSACTION_ERRORS.INVALID_TRANSACTION_DATA });
     }
     
@@ -86,7 +91,7 @@ transaction.post('/:id/transactions', async (c) => {
             },
         });
 
-        const balanceUpdate = type === 'expense' ? { decrement: amount } : { increment: amount };
+        const balanceUpdate = type === TRANSACTION_TYPES.EXPENSE ? { decrement: amount } : { increment: amount };
 
         await prisma.account.update({
             where: { id: accountId },
@@ -130,7 +135,7 @@ transaction.put('/:id/transactions/:transactionId', async (c) => {
 
     const { accountId, categoryId, amount, type, date, description } = requestBody;
 
-    if (!accountId || !categoryId || isNaN(amount) || !['expense', 'income'].includes(type)) {
+    if (!accountId || !categoryId || isNaN(amount) || ![TRANSACTION_TYPES.EXPENSE, TRANSACTION_TYPES.INCOME].includes(type)) {
         throw new HTTPException(400, { message: TRANSACTION_ERRORS.INVALID_TRANSACTION_DATA });
     }
 
@@ -159,9 +164,9 @@ transaction.put('/:id/transactions/:transactionId', async (c) => {
         }
 
         let balanceUpdate;
-        if (transaction.type === 'income') {
+        if (transaction.type === TRANSACTION_TYPES.INCOME) {
             balanceUpdate = account.balance - transaction.amount;
-        } else if (transaction.type === 'expense') {
+        } else if (transaction.type === TRANSACTION_TYPES.EXPENSE) {
             balanceUpdate = account.balance + transaction.amount;
         } else {
             throw new HTTPException(400, { message: TRANSACTION_ERRORS.INVALID_TRANSACTION_DATA });
@@ -219,9 +224,9 @@ transaction.delete('/:id/transactions/:transactionId', async (c) => {
         }
 
         let balanceUpdate;
-        if (transaction.type === 'income') {
+        if (transaction.type === TRANSACTION_TYPES.INCOME) {
             balanceUpdate = account.balance - transaction.amount;
-        } else if (transaction.type === 'expense') {
+        } else if (transaction.type === TRANSACTION_TYPES.EXPENSE) {
             balanceUpdate = account.balance + transaction.amount;
         } else {
             throw new HTTPException(400, { message: TRANSACTION_ERRORS.INVALID_TRANSACTION_DATA });
