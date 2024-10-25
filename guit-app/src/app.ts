@@ -4,6 +4,7 @@ import { HTTPException } from 'hono/http-exception';
 import account from './routes/account.routes';
 import categories from './routes/categories.routes';
 import transaction from './routes/transactions.routes';
+import budget from './routes/budget.routes';
 
 const app = new Hono()
 
@@ -44,5 +45,6 @@ app.route('/user', user);
 app.route('/user', account);
 app.route('/category', categories);
 app.route('/user', transaction);
+app.route('/user', budget);
 
 export default app;

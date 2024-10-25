@@ -34,6 +34,16 @@ export const TRANSACTION_ERRORS = {
     INVALID_ID: 'Invalid transaction ID'
 };
 
+export const BUDGET_ERRORS = {
+    NOT_FOUND: 'Budgets not found',
+    RETRIEVAL_ERROR: 'Error retrieving budgets',
+    INVALID_USER_ID: 'Invalid user ID',
+    INVALID_REQUEST_BODY: 'Invalid request body',
+    INVALID_BUDGET_DATA: 'Invalid budget data',
+    INVALID_ID: 'Invalid budget ID',
+    CREATE_ERROR: 'Error creating budget',
+}; 
+
 export const DATA_ERRORS = {
     NOT_FOUND: 'Requested data not found'
 };
