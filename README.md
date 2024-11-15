@@ -10,7 +10,6 @@ The backend for the POC Moneytracker app.
 - [API Endpoints](#api-endpoints)
 - [Environment Variables](#environment-variables)
 - [Running Tests](#running-tests)
-- [Project Structure](#project-structure)
 - [License](#license)
 
 ## Installation
@@ -144,39 +143,6 @@ To run the tests, use the following command:
 ```sh
 pnpm run test
 ```
-
-## Project Struncture
-
-.gitignore
-guit-app/
-    .env
-    .gitignore
-    [`guit-app/package.json`](guit-app/package.json )
-    [`guit-app/pnpm-lock.yaml`](guit-app/pnpm-lock.yaml )
-    prisma/
-        migrations/
-            ...
-        [`guit-app/prisma/schema.prisma`](guit-app/prisma/schema.prisma )
-    [`README.md`](README.md )
-    src/
-        [`guit-app/src/app.ts`](guit-app/src/app.ts )
-        [`guit-app/src/index.ts`](guit-app/src/index.ts )
-        libs/
-            [`guit-app/src/libs/errorMessages.ts`](guit-app/src/libs/errorMessages.ts )
-            [`guit-app/src/libs/prisma.ts`](guit-app/src/libs/prisma.ts )
-        routes/
-            [`guit-app/src/routes/account.routes.test.ts`](guit-app/src/routes/account.routes.test.ts )
-            [`guit-app/src/routes/account.routes.ts`](guit-app/src/routes/account.routes.ts )
-            [`guit-app/src/routes/budget.routes.test.ts`](guit-app/src/routes/budget.routes.test.ts )
-            [`guit-app/src/routes/budget.routes.ts`](guit-app/src/routes/budget.routes.ts )
-            [`guit-app/src/routes/categories.routes.test.ts`](guit-app/src/routes/categories.routes.test.ts )
-            [`guit-app/src/routes/categories.routes.ts`](guit-app/src/routes/categories.routes.ts )
-            [`guit-app/src/routes/transactions.routes.test.ts`](guit-app/src/routes/transactions.routes.test.ts )
-            [`guit-app/src/routes/transactions.routes.ts`](guit-app/src/routes/transactions.routes.ts )
-            ...
-    [`guit-app/tsconfig.json`](guit-app/tsconfig.json )
-LICENSE
-[`README.md`](README.md )
 
 # License
 
