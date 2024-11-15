@@ -47,7 +47,15 @@ transaction.get('/:id/transactions', async (c) => {
     }
 });
 
-// Endpoint to get a transaction by id.
+/**
+ * Endpoint to get a transaction by id.
+ * 
+ * @async
+ * @function
+ * @param {Context} c - The context object containing the request and response.
+ * @returns {Promise<Response>} JSON response with the created transaction data.
+ * @throws {HTTPException} If unable to create a new transaction.
+ */
 transaction.get('/:id/transactions/:transactionId', async (c) => {
     const userId = parseInt(c.req.param('id'), 10);
     const transactionId = parseInt(c.req.param('transactionId'), 10);
