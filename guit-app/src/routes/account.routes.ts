@@ -17,8 +17,11 @@ const account = new Hono();
  */
 account.get('/:id/account', async (c) => {
     const userId = parseInt(c.req.param('id'), 10);
+    if (isNaN(userId)) {
+        throw new HTTPException(400, { message: ACCOUNT_ERRORS.INVALID_ID });
+    }
     try {
-        const accounts = await prisma.user.findMany({
+        const user = await prisma.user.findUnique({
             where: {
                 id: userId,
             },
@@ -26,12 +29,12 @@ account.get('/:id/account', async (c) => {
                 accounts: true
             },
         });
-        if (accounts === undefined || accounts.length === 0) {
+        if (!user || !user.accounts || user.accounts.length === 0) {
             throw new HTTPException(404, { message: ACCOUNT_ERRORS.NOT_FOUND });
         }
-        return c.json(accounts);
+        return c.json(user.accounts);
     } catch (error) {
-        throw new HTTPException(404, { message: ACCOUNT_ERRORS.NOT_FOUND });
+        throw new HTTPException(500, { message: ACCOUNT_ERRORS.RETRIEVE_ERROR });
     }
 });
 

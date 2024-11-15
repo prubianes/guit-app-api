@@ -48,6 +48,44 @@ transaction.get('/:id/transactions', async (c) => {
 });
 
 /**
+ * Endpoint to get a transaction by id.
+ * 
+ * @async
+ * @function
+ * @param {Context} c - The context object containing the request and response.
+ * @returns {Promise<Response>} JSON response with the created transaction data.
+ * @throws {HTTPException} If unable to create a new transaction.
+ */
+transaction.get('/:id/transactions/:transactionId', async (c) => {
+    const userId = parseInt(c.req.param('id'), 10);
+    const transactionId = parseInt(c.req.param('transactionId'), 10);
+
+    if (isNaN(userId)) {
+        throw new HTTPException(400, { message: TRANSACTION_ERRORS.INVALID_USER_ID });
+    }
+
+    if (isNaN(transactionId)) {
+        throw new HTTPException(400, { message: TRANSACTION_ERRORS.INVALID_ID });
+    }
+
+    try {
+        const transaction = await prisma.transaction.findUnique({
+            where: {
+                id: transactionId,
+            },
+        });
+
+        if (!transaction) {
+            throw new HTTPException(404, { message: TRANSACTION_ERRORS.NOT_FOUND });
+        }
+
+        return c.json(transaction);
+    } catch (error) {
+        throw new HTTPException(500, { message: TRANSACTION_ERRORS.RETRIEVAL_ERROR });
+    }
+});
+
+/**
  *  Endpoint to post a new transaction for an user.
  *  with the transaction type being "expense" or "income", it will
  *  add or sustract the amount from the account balance.
