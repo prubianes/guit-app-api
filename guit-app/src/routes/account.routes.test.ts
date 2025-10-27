@@ -1,10 +1,33 @@
 import app from '../app';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeAll, afterAll } from 'vitest';
+
+let userId: number;
+let accountId: number;
+
+beforeAll(async () => {
+  // Create a user before all tests
+  const newUser = {
+    name: 'Test User For Account',
+    email: `testuser@example.com`,
+    password: 'testpassword123',
+  };
+  const response = await app.request('/user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newUser),
+  });
+  const responseBody = await response.json();
+  userId = responseBody.id;
+});
+
+afterAll(async () => {
+  // Delete the user after all tests
+  if (userId) {
+    await app.request(`/user/${userId}`, { method: 'DELETE' });
+  }
+});
 
 describe('Account Routes', () => {
-  let userId: number = 13;
-  let accountId: number;
-
   it('should create a new account', async () => {
     const newAccount = {
       name: 'Test Account',
