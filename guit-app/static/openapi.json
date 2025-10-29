@@ -1,0 +1,472 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Guit App API",
+    "version": "1.0.0"
+  },
+  "tags": [
+    { "name": "User", "description": "User management" },
+    { "name": "Account", "description": "Account management" },
+    { "name": "Budget", "description": "Budget management" },
+    { "name": "Transaction", "description": "Transaction management" },
+    { "name": "Category", "description": "Category management" }
+  ],
+  "paths": {
+    "/user": {
+      "post": {
+        "tags": ["User"],
+        "summary": "Create a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                },
+                "required": ["name", "email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "User created" },
+          "403": { "description": "Unable to create user" }
+        }
+      },
+      "get": {
+        "tags": ["User"],
+        "summary": "Get all users",
+        "responses": {
+          "200": { "description": "List of users" }
+        }
+      }
+    },
+    "/user/{id}": {
+      "get": {
+        "tags": ["User"],
+        "summary": "Get user by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "User found" },
+          "400": { "description": "Invalid ID" },
+          "404": { "description": "User not found" }
+        }
+      },
+      "put": {
+        "tags": ["User"],
+        "summary": "Update user by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                },
+                "required": ["name", "email", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "User updated" },
+          "400": { "description": "Invalid ID" },
+          "404": { "description": "User not found" }
+        }
+      },
+      "delete": {
+        "tags": ["User"],
+        "summary": "Delete user by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "User deleted" },
+          "400": { "description": "Invalid ID" },
+          "404": { "description": "User not found" }
+        }
+      }
+    },
+    "/user/{id}/account": {
+      "get": {
+        "tags": ["Account"],
+        "summary": "Get all accounts for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of accounts" },
+          "404": { "description": "No accounts found" }
+        }
+      },
+      "post": {
+        "tags": ["Account"],
+        "summary": "Create a new account for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "type": { "type": "string" },
+                  "balance": { "type": "number" }
+                },
+                "required": ["name", "type", "balance"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Account created" },
+          "403": { "description": "Unable to create account" }
+        }
+      }
+    },
+    "/user/{id}/account/{accountId}": {
+      "get": {
+        "tags": ["Account"],
+        "summary": "Get account by ID for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "accountId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Account found" },
+          "404": { "description": "Account not found" }
+        }
+      },
+      "put": {
+        "tags": ["Account"],
+        "summary": "Update account by ID for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "accountId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "type": { "type": "string" },
+                  "balance": { "type": "number" }
+                },
+                "required": ["name", "type", "balance"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Account updated" },
+          "404": { "description": "Account not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Account"],
+        "summary": "Delete account by ID for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "accountId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Account deleted" },
+          "404": { "description": "Account not found" }
+        }
+      }
+    },
+    "/user/{id}/budget": {
+      "get": {
+        "tags": ["Budget"],
+        "summary": "Get all budgets for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of budgets" },
+          "404": { "description": "No budgets found" }
+        }
+      },
+      "post": {
+        "tags": ["Budget"],
+        "summary": "Create a new budget for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "categoryId": { "type": "integer" },
+                  "amount": { "type": "number" },
+                  "period": { "type": "string" }
+                },
+                "required": ["categoryId", "amount", "period"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Budget created" },
+          "403": { "description": "Unable to create budget" }
+        }
+      }
+    },
+    "/user/{id}/budget/{budgetId}": {
+      "get": {
+        "tags": ["Budget"],
+        "summary": "Get budget by ID for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "budgetId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Budget found" },
+          "404": { "description": "Budget not found" }
+        }
+      },
+      "put": {
+        "tags": ["Budget"],
+        "summary": "Update budget by ID for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "budgetId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "categoryId": { "type": "integer" },
+                  "amount": { "type": "number" },
+                  "period": { "type": "string" }
+                },
+                "required": ["categoryId", "amount", "period"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Budget updated" },
+          "404": { "description": "Budget not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Budget"],
+        "summary": "Delete budget by ID for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "budgetId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Budget deleted" },
+          "404": { "description": "Budget not found" }
+        }
+      }
+    },
+    "/user/{id}/transactions": {
+      "get": {
+        "tags": ["Transaction"],
+        "summary": "Get all transactions for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "List of transactions" },
+          "404": { "description": "No transactions found" }
+        }
+      },
+      "post": {
+        "tags": ["Transaction"],
+        "summary": "Create a new transaction for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "accountId": { "type": "integer" },
+                  "categoryId": { "type": "integer" },
+                  "amount": { "type": "number" },
+                  "type": { "type": "string" },
+                  "date": { "type": "string", "format": "date-time" },
+                  "description": { "type": "string" }
+                },
+                "required": ["accountId", "categoryId", "amount", "type", "date", "description"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Transaction created" },
+          "403": { "description": "Unable to create transaction" }
+        }
+      }
+    },
+    "/user/{id}/transactions/{transactionId}": {
+      "get": {
+        "tags": ["Transaction"],
+        "summary": "Get transaction by ID for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Transaction found" },
+          "404": { "description": "Transaction not found" }
+        }
+      },
+      "put": {
+        "tags": ["Transaction"],
+        "summary": "Update transaction by ID for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "accountId": { "type": "integer" },
+                  "categoryId": { "type": "integer" },
+                  "amount": { "type": "number" },
+                  "type": { "type": "string" },
+                  "date": { "type": "string", "format": "date-time" },
+                  "description": { "type": "string" }
+                },
+                "required": ["accountId", "categoryId", "amount", "type", "date", "description"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Transaction updated" },
+          "404": { "description": "Transaction not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Transaction"],
+        "summary": "Delete transaction by ID for a user",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Transaction deleted" },
+          "404": { "description": "Transaction not found" }
+        }
+      }
+    },
+    "/category": {
+      "post": {
+        "tags": ["Category"],
+        "summary": "Create a new category",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "type": { "type": "string" }
+                },
+                "required": ["name", "type"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Category created" }
+        }
+      },
+      "get": {
+        "tags": ["Category"],
+        "summary": "Get all categories",
+        "responses": {
+          "200": { "description": "List of categories" }
+        }
+      }
+    },
+    "/category/{id}": {
+      "get": {
+        "tags": ["Category"],
+        "summary": "Get category by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Category found" },
+          "404": { "description": "Category not found" }
+        }
+      },
+      "put": {
+        "tags": ["Category"],
+        "summary": "Update category by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "type": { "type": "string" }
+                },
+                "required": ["name", "type"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Category updated" },
+          "404": { "description": "Category not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Category"],
+        "summary": "Delete category by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Category deleted" },
+          "404": { "description": "Category not found" }
+        }
+      }
+    }
+  }
+}
