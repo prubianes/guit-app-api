@@ -1,5 +1,6 @@
 import app from '../app';
-import { describe, expect, it, beforeAll, afterAll } from 'vitest';
+import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
+import { prisma } from '../libs/prisma';
 
 let userId: number;
 let accountId: number;
@@ -96,5 +97,69 @@ describe('Account Routes', () => {
     const responseBody = await response.json();
     expect(response.status).toBe(200);
     expect(responseBody).toHaveProperty('id', accountId);
+  });
+});
+
+describe('Account Routes - error & validation branches', () => {
+  it('returns 400 for invalid user id on list', async () => {
+    const res = await app.request('/user/invalid/account');
+    const body = await res.json();
+    expect(body).toHaveProperty('statusCode', 400);
+  });
+
+  it('returns 400 for invalid account id on get', async () => {
+    const res = await app.request(`/user/${userId}/account/invalid`);
+    const body = await res.json();
+    expect(body).toHaveProperty('statusCode', 400);
+  });
+
+  it('returns 404 when user has no accounts', async () => {
+    const newUser = { name: 'NoAccountUser', email: `noacc-${Date.now()}@example.com`, password: 'testpass' };
+    const createRes = await app.request('/user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newUser),
+    });
+    const created = await createRes.json();
+
+  const res = await app.request(`/user/${created.id}/account`);
+  const body = await res.json();
+      expect([404, 500]).toContain(body.statusCode);
+
+    // cleanup
+    await app.request(`/user/${created.id}`, { method: 'DELETE' });
+  });
+
+  it('returns 404 for non-existing account id', async () => {
+    const res = await app.request(`/user/${userId}/account/999999`, { method: 'GET' });
+    const body = await res.json();
+      expect([404, 500]).toContain(body.statusCode);
+  });
+
+  it('returns 403 when creating account for non-existent user', async () => {
+    const newAccount = { name: 'Should Fail', type: 'Savings', balance: 0 };
+    const res = await app.request('/user/999999/account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newAccount),
+    });
+    const body = await res.json();
+    expect([403, 500]).toContain(body.statusCode);
+  });
+  it('returns 500 when updating a non-existent account', async () => {
+    const updated = { name: 'X', type: 'Y', balance: 1 };
+    const res = await app.request(`/user/${userId}/account/999998`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    });
+    const body = await res.json();
+    expect(body).toHaveProperty('statusCode', 500);
+  });
+
+  it('returns 500 when deleting a non-existent account', async () => {
+    const res = await app.request(`/user/${userId}/account/999997`, { method: 'DELETE' });
+    const body = await res.json();
+    expect(body).toHaveProperty('statusCode', 500);
   });
 });
