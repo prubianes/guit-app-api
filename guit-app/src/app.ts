@@ -31,10 +31,11 @@ app.get('/', (c) => {
  */
 app.onError((err, c) => {
     const statusCode = err instanceof HTTPException ? err.status : 500;
+    // Return JSON error body and set the HTTP status code accordingly
     return c.json({
         statusCode,
         message: err.message
-    });
+    }, statusCode);
 });
 
 /**
@@ -47,7 +48,7 @@ app.notFound((c) => {
     return c.json({
         statusCode: 404,
         message: 'Not found'
-    });
+    }, 404);
 });
 
 // Routes

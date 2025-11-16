@@ -103,14 +103,16 @@ describe('Account Routes', () => {
 describe('Account Routes - error & validation branches', () => {
   it('returns 400 for invalid user id on list', async () => {
     const res = await app.request('/user/invalid/account');
+    expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body).toHaveProperty('statusCode', 400);
+    expect(body).toHaveProperty('message');
   });
 
   it('returns 400 for invalid account id on get', async () => {
     const res = await app.request(`/user/${userId}/account/invalid`);
+    expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body).toHaveProperty('statusCode', 400);
+    expect(body).toHaveProperty('message');
   });
 
   it('returns 404 when user has no accounts', async () => {
@@ -123,17 +125,19 @@ describe('Account Routes - error & validation branches', () => {
     const created = await createRes.json();
 
   const res = await app.request(`/user/${created.id}/account`);
+  expect([404, 500]).toContain(res.status);
   const body = await res.json();
-      expect([404, 500]).toContain(body.statusCode);
+  expect(body).toHaveProperty('message');
 
     // cleanup
     await app.request(`/user/${created.id}`, { method: 'DELETE' });
   });
 
   it('returns 404 for non-existing account id', async () => {
-    const res = await app.request(`/user/${userId}/account/999999`, { method: 'GET' });
-    const body = await res.json();
-      expect([404, 500]).toContain(body.statusCode);
+  const res = await app.request(`/user/${userId}/account/999999`, { method: 'GET' });
+  expect([404, 500]).toContain(res.status);
+  const body = await res.json();
+  expect(body).toHaveProperty('message');
   });
 
   it('returns 403 when creating account for non-existent user', async () => {
@@ -143,8 +147,9 @@ describe('Account Routes - error & validation branches', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newAccount),
     });
+    expect([403, 500]).toContain(res.status);
     const body = await res.json();
-    expect([403, 500]).toContain(body.statusCode);
+    expect(body).toHaveProperty('message');
   });
   it('returns 500 when updating a non-existent account', async () => {
     const updated = { name: 'X', type: 'Y', balance: 1 };
@@ -153,13 +158,15 @@ describe('Account Routes - error & validation branches', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updated),
     });
+    expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body).toHaveProperty('statusCode', 500);
+    expect(body).toHaveProperty('message');
   });
 
   it('returns 500 when deleting a non-existent account', async () => {
     const res = await app.request(`/user/${userId}/account/999997`, { method: 'DELETE' });
+    expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body).toHaveProperty('statusCode', 500);
+    expect(body).toHaveProperty('message');
   });
 });

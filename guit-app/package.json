@@ -8,14 +8,14 @@
   "dependencies": {
     "@hono/node-server": "^1.19.6",
     "@hono/swagger-ui": "^0.5.2",
-    "@prisma/client": "6.0.0",
-    "hono": "^4.10.4"
+    "@prisma/client": "6.19.0",
+    "hono": "^4.10.6"
   },
   "devDependencies": {
-    "@types/node": "^24.10.0",
-    "@vitest/coverage-v8": "4.0.8",
-    "prisma": "6.0.0",
+    "@types/node": "^24.10.1",
+    "@vitest/coverage-v8": "4.0.9",
+    "prisma": "6.19.0",
     "tsx": "^4.20.6",
-    "vitest": "^4.0.8"
+    "vitest": "^4.0.9"
   }
 }
