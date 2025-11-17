@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 
 import { prisma } from '../libs/prisma';
+import bcrypt from 'bcryptjs';
 import { USER_ERRORS } from '../libs/errorMessages';
 
 import { User } from '@prisma/client';
@@ -20,11 +21,19 @@ const user = new Hono();
 user.post('/', async (c) => {
     const requestBody = await c.req.json<User>();
     try {
+        const hashed = await bcrypt.hash(requestBody.password, 10);
         let user_created = await prisma.user.create({
             data: {
                 name: requestBody.name,
                 email: requestBody.email,
-                password: requestBody.password,
+                password: hashed,
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                createdAt: true,
+                updatedAt: true,
             },
         });
         return c.json(user_created);
@@ -100,6 +109,7 @@ user.put('/:id', async (c) => {
         throw new HTTPException(400, {message: USER_ERRORS.INVALID_ID});
     }
     const requestBody = await c.req.json<User>();
+    const hashed = await bcrypt.hash(requestBody.password, 10);
     const user = await prisma.user.update({
         where: {
             id: userId,
@@ -108,7 +118,14 @@ user.put('/:id', async (c) => {
         data: {
             name: requestBody.name,
             email: requestBody.email,
-            password: requestBody.password,
+            password: hashed,
+        },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            createdAt: true,
+            updatedAt: true,
         },
     });
     if (!user) {

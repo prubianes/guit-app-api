@@ -28,6 +28,8 @@ describe('User Routes', () => {
     expect(responseBody).toHaveProperty('id');
     expect(responseBody.name).toBe(newUser.name);
     expect(responseBody.email).toBe(newUser.email);
+    // Ensure password is not returned
+    expect(responseBody).not.toHaveProperty('password');
   });
 
   it('should retrieve all users', async () => {
