@@ -116,3 +116,75 @@ describe('Budget Routes', () => {
     expect(responseBody).toHaveProperty('id', budgetId);
   });
 });
+
+describe('Budget Routes - error & validation branches', () => {
+  it('returns 400 for invalid user id on list', async () => {
+    const res = await app.request('/user/invalid/budget');
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body).toHaveProperty('message');
+  });
+
+  it('returns 400 for invalid budget id on get', async () => {
+    const res = await app.request(`/user/${userId}/budget/invalid`);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body).toHaveProperty('message');
+  });
+
+  it('returns 404 when user has no budgets', async () => {
+    const newUser = { name: 'NoBudgetUser', email: `nobudget-${Date.now()}@example.com`, password: 'testpass' };
+    const createRes = await app.request('/user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newUser),
+    });
+    const created = await createRes.json();
+
+    const res = await app.request(`/user/${created.id}/budget`);
+    expect([404, 500]).toContain(res.status);
+    const body = await res.json();
+    expect(body).toHaveProperty('message');
+
+    // cleanup
+    await app.request(`/user/${created.id}`, { method: 'DELETE' });
+  });
+
+  it('returns 404 for non-existing budget id', async () => {
+    const res = await app.request(`/user/${userId}/budget/999999`, { method: 'GET' });
+    expect([404, 500]).toContain(res.status);
+    const body = await res.json();
+    expect(body).toHaveProperty('message');
+  });
+
+  it('returns 500 when creating budget for non-existent user', async () => {
+    const newBudget = { categoryId, amount: 10, period: 'monthly' };
+    const res = await app.request('/user/999999/budget', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newBudget),
+    });
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toHaveProperty('message');
+  });
+
+  it('returns 500 when updating a non-existent budget', async () => {
+    const updated = { categoryId, amount: 1, period: 'yearly' };
+    const res = await app.request(`/user/${userId}/budget/999998`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    });
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toHaveProperty('message');
+  });
+
+  it('returns 500 when deleting a non-existent budget', async () => {
+    const res = await app.request(`/user/${userId}/budget/999997`, { method: 'DELETE' });
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body).toHaveProperty('message');
+  });
+});

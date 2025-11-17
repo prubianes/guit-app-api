@@ -1,6 +1,7 @@
 
 import app from '../app';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { prisma } from '../libs/prisma';
 
 let userId: number;
 
@@ -69,5 +70,83 @@ describe('User Routes', () => {
     const responseBody = await response.json();
     expect(response.status).toBe(200);
     expect(responseBody).toHaveProperty('id', userId);
+  });
+});
+
+describe('User Routes - error & validation branches', () => {
+  it('returns 403 when create fails', async () => {
+    const originalCreate = (prisma.user as any).create;
+    (prisma.user as any).create = vi.fn().mockRejectedValueOnce(new Error('create-fail'));
+
+    const res = await app.request('/user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'X', email: 'x@example.com', password: 'p' }),
+    });
+
+    expect(res.status).toBe(403);
+
+    (prisma.user as any).create = originalCreate;
+  });
+
+  it('returns 500 when findMany throws', async () => {
+    const originalFindMany = (prisma.user as any).findMany;
+    (prisma.user as any).findMany = vi.fn().mockRejectedValueOnce(new Error('boom'));
+
+    const res = await app.request('/user');
+    expect(res.status).toBe(500);
+
+    (prisma.user as any).findMany = originalFindMany;
+  });
+
+  it('returns 400 for invalid id on get', async () => {
+    const res = await app.request('/user/invalid');
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body).toHaveProperty('message');
+  });
+
+  it('returns 404 when user not found (get)', async () => {
+    const originalFindUnique = (prisma.user as any).findUnique;
+    (prisma.user as any).findUnique = vi.fn().mockResolvedValueOnce(null as any);
+
+    const res = await app.request('/user/999999');
+    expect(res.status).toBe(404);
+
+    (prisma.user as any).findUnique = originalFindUnique;
+  });
+
+  it('returns 400 for invalid id on put', async () => {
+    const res = await app.request('/user/invalid', { method: 'PUT' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 404 when update returns null', async () => {
+    const originalUpdate = (prisma.user as any).update;
+    (prisma.user as any).update = vi.fn().mockResolvedValueOnce(null as any);
+
+    const res = await app.request('/user/5555', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'X', email: 'x@x.com', password: 'p' }),
+    });
+    expect(res.status).toBe(404);
+
+    (prisma.user as any).update = originalUpdate;
+  });
+
+  it('returns 400 for invalid id on delete', async () => {
+    const res = await app.request('/user/invalid', { method: 'DELETE' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 404 when delete returns null', async () => {
+    const originalDelete = (prisma.user as any).delete;
+    (prisma.user as any).delete = vi.fn().mockResolvedValueOnce(null as any);
+
+    const res = await app.request('/user/5556', { method: 'DELETE' });
+    expect(res.status).toBe(404);
+
+    (prisma.user as any).delete = originalDelete;
   });
 });
