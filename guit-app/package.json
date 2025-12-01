@@ -2,26 +2,39 @@
   "name": "guit-app",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "test": "vitest",
-    "coverage": "vitest run --coverage"
+    "test": "vitest --sequence.concurrent=false",
+    "coverage": "vitest run --coverage --sequence.concurrent=false"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
     "@hono/swagger-ui": "^0.5.2",
-    "@prisma/client": "6.19.0",
-    "hono": "^4.10.6",
-    "bcryptjs": "^2.4.3"
+    "@libsql/client": "^0.15.15",
+    "@prisma/adapter-better-sqlite3": "^7.0.1",
+    "@prisma/client": "^7.0.0",
+    "bcryptjs": "^2.4.3",
+    "hono": "^4.10.6"
   },
   "devDependencies": {
-    "@types/node": "^24.10.1",
+    "@prisma/adapter-libsql": "^7.0.1",
     "@types/bcryptjs": "^2.4.2",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.10.1",
     "@vitest/coverage-v8": "4.0.9",
-    "prisma": "6.19.0",
+    "better-sqlite3": "^12.5.0",
+    "prisma": "^7.0.0",
     "tsx": "^4.20.6",
     "vitest": "^4.0.9"
-  }
-  ,
+  },
   "vitest": {
-    "setupFiles": ["src/test/setup.ts"]
+    "setupFiles": [
+      "src/test/setup.ts"
+    ],
+    "fileParallelism": false,
+    "pool": "forks",
+    "poolOptions": {
+      "forks": {
+        "singleFork": true
+      }
+    }
   }
 }
