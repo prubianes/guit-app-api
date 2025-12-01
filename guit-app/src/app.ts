@@ -1,4 +1,6 @@
 import { Hono } from 'hono'
+import { swaggerUI } from '@hono/swagger-ui'
+import { serveStatic } from '@hono/node-server/serve-static';
 import user from './routes/users.routes';
 import { HTTPException } from 'hono/http-exception';
 import account from './routes/account.routes';
@@ -7,6 +9,14 @@ import transaction from './routes/transactions.routes';
 import budget from './routes/budget.routes';
 
 const app = new Hono()
+
+// Serve openapi.json statically at /openapi.json
+app.use('/openapi.json', serveStatic({ path: './static/openapi.json' }));
+
+// Serve Swagger UI at /docs
+app.get('/docs', swaggerUI({
+  url: '/openapi.json',
+}));
 
 app.get('/', (c) => {
     return c.text('Hello Hono!')
@@ -21,10 +31,11 @@ app.get('/', (c) => {
  */
 app.onError((err, c) => {
     const statusCode = err instanceof HTTPException ? err.status : 500;
+    // Return JSON error body and set the HTTP status code accordingly
     return c.json({
         statusCode,
         message: err.message
-    });
+    }, statusCode);
 });
 
 /**
@@ -37,7 +48,7 @@ app.notFound((c) => {
     return c.json({
         statusCode: 404,
         message: 'Not found'
-    });
+    }, 404);
 });
 
 // Routes

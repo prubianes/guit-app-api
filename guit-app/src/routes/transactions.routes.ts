@@ -22,6 +22,9 @@ const TRANSACTION_TYPES = {
  */
 transaction.get('/:id/transactions', async (c) => {
     const userId = parseInt(c.req.param('id'), 10);
+    if (isNaN(userId)) {
+        throw new HTTPException(400, { message: TRANSACTION_ERRORS.INVALID_USER_ID });
+    }
     try {
         const transactions = await prisma.transaction.findMany({
             where: {
@@ -42,7 +45,8 @@ transaction.get('/:id/transactions', async (c) => {
             throw new HTTPException(404, { message: TRANSACTION_ERRORS.NOT_FOUND });
         }
         return c.json(transactions);
-    } catch (error) {
+    } catch (error: any) {
+        if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, { message: TRANSACTION_ERRORS.RETRIEVAL_ERROR });
     }
 });
@@ -80,7 +84,8 @@ transaction.get('/:id/transactions/:transactionId', async (c) => {
         }
 
         return c.json(transaction);
-    } catch (error) {
+    } catch (error: any) {
+        if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, { message: TRANSACTION_ERRORS.RETRIEVAL_ERROR });
     }
 });
@@ -137,7 +142,8 @@ transaction.post('/:id/transactions', async (c) => {
         });
 
         return c.json(transaction);
-    } catch (error) {
+    } catch (error: any) {
+        if (error instanceof HTTPException) throw error;
         console.error(error);
         throw new HTTPException(500, { message: TRANSACTION_ERRORS.CREATION_ERROR });
     }
@@ -216,7 +222,8 @@ transaction.put('/:id/transactions/:transactionId', async (c) => {
         });
 
         return c.json(transaction);
-    } catch (error) {
+    } catch (error: any) {
+        if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, { message: TRANSACTION_ERRORS.RETRIEVAL_ERROR });
     }
 });
@@ -282,7 +289,8 @@ transaction.delete('/:id/transactions/:transactionId', async (c) => {
         });
 
         return c.json(deletedTransaction);
-    } catch (error) {
+    } catch (error: any) {
+        if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, { message: TRANSACTION_ERRORS.RETRIEVAL_ERROR });
     }
 });

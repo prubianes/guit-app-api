@@ -18,7 +18,8 @@ categories.get('/', async (c) => {
     try {
         const categories = await prisma.category.findMany();
         return c.json(categories);
-    } catch (error) {
+    } catch (error: any) {
+        if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, {message: CATEGORY_ERRORS.RETRIEVE_ALL_ERROR});
     }
 });
@@ -47,7 +48,8 @@ categories.get('/:id', async (c) => {
             throw new HTTPException(404, {message: CATEGORY_ERRORS.NOT_FOUND});
         }
         return c.json(category);
-    } catch (error) {
+    } catch (error: any) {
+        if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, {message: CATEGORY_ERRORS.RETRIEVE_ERROR});
     }
 });
@@ -76,7 +78,8 @@ categories.delete('/:id', async (c) => {
             throw new HTTPException(404, {message: CATEGORY_ERRORS.NOT_FOUND});
         }
         return c.json(category);
-    } catch (error) {
+    } catch (error: any) {
+        if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, {message: CATEGORY_ERRORS.DELETE_ERROR});
     }
 });
@@ -100,7 +103,8 @@ categories.post('/', async (c) => {
             },
         });
         return c.json(category);
-    } catch (error) {
+    } catch (error: any) {
+        if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, {message: CATEGORY_ERRORS.CREATE_ERROR});
     }
 });
@@ -134,7 +138,8 @@ categories.put('/:id', async (c) => {
             throw new HTTPException(404, {message: CATEGORY_ERRORS.NOT_FOUND});
         }
         return c.json(category);
-    } catch (error) {
+    } catch (error: any) {
+        if (error instanceof HTTPException) throw error;
         throw new HTTPException(500, {message: CATEGORY_ERRORS.RETRIEVE_ERROR});
     }
 }); 

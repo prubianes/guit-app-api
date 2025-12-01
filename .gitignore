@@ -133,3 +133,5 @@ dist
 guit-app/prisma/dev.db
 
 guit-app/prisma/migrations/
+
+.DS_Store

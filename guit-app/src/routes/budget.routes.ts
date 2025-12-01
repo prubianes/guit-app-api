@@ -19,6 +19,9 @@ const budget = new Hono();
  */
 budget.get('/:id/budget', async (c) => {
     const userId = parseInt(c.req.param('id'), 10);
+    if (isNaN(userId)) {
+        throw new HTTPException(400, { message: BUDGET_ERRORS.INVALID_USER_ID });
+    }
     try {
         const budgets = await prisma.budget.findMany({
             where: {
