@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from 'hono';
 import { AppError } from '../libs/errors';
+import { verifyAccessToken } from '../libs/tokens';
 
 export type AuthContext = {
   userId: number;
@@ -7,15 +8,26 @@ export type AuthContext = {
 
 const AUTH_KEY = 'auth';
 
-/**
- * Base auth contract for new routes.
- * Temporary strategy: accepts `x-user-id` header until JWT flow lands.
- */
 export const requireAuth: MiddlewareHandler = async (c, next) => {
-  const userIdHeader = c.req.header('x-user-id');
-  const parsedUserId = Number.parseInt(userIdHeader ?? '', 10);
+  const authorization = c.req.header('authorization');
+  const bearerToken = authorization?.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length)
+    : undefined;
 
-  if (!Number.isInteger(parsedUserId) || parsedUserId <= 0) {
+  let userId: number | undefined;
+  if (bearerToken) {
+    const tokenPayload = verifyAccessToken(bearerToken);
+    userId = tokenPayload.sub;
+  } else {
+    // Backward-compatible fallback for scaffold and local manual testing.
+    const userIdHeader = c.req.header('x-user-id');
+    const parsedUserId = Number.parseInt(userIdHeader ?? '', 10);
+    if (Number.isInteger(parsedUserId) && parsedUserId > 0) {
+      userId = parsedUserId;
+    }
+  }
+
+  if (!userId) {
     throw new AppError({
       status: 401,
       code: 'UNAUTHORIZED',
@@ -23,7 +35,7 @@ export const requireAuth: MiddlewareHandler = async (c, next) => {
     });
   }
 
-  c.set(AUTH_KEY, { userId: parsedUserId } satisfies AuthContext);
+  c.set(AUTH_KEY, { userId } satisfies AuthContext);
   await next();
 };
 

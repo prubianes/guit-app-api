@@ -10,8 +10,8 @@
     { "name": "Budget", "description": "Budget management" },
     { "name": "Transaction", "description": "Transaction management" },
     { "name": "Category", "description": "Category management" },
-    { "name": "Auth", "description": "Authentication endpoints (v2 scaffold)" },
-    { "name": "Me", "description": "Authenticated user endpoints (v2 scaffold)" }
+    { "name": "Auth", "description": "Authentication endpoints (v2)" },
+    { "name": "Me", "description": "Authenticated user endpoints (v2)" }
   ],
   "paths": {
     "/user": {
@@ -392,40 +392,92 @@
     "/api/v2/auth/register": {
       "post": {
         "tags": ["Auth"],
-        "summary": "Register endpoint scaffold",
+        "summary": "Register a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                },
+                "required": ["name", "email", "password"]
+              }
+            }
+          }
+        },
         "responses": {
-          "501": { "description": "Not implemented yet" }
+          "201": { "description": "User registered and token pair issued" },
+          "400": { "description": "Validation error" },
+          "409": { "description": "Email already exists" }
         }
       }
     },
     "/api/v2/auth/login": {
       "post": {
         "tags": ["Auth"],
-        "summary": "Login endpoint scaffold",
+        "summary": "Login with email and password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                },
+                "required": ["email", "password"]
+              }
+            }
+          }
+        },
         "responses": {
-          "501": { "description": "Not implemented yet" }
+          "200": { "description": "Login success and token pair issued" },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Invalid credentials" }
         }
       }
     },
     "/api/v2/auth/refresh": {
       "post": {
         "tags": ["Auth"],
-        "summary": "Refresh token endpoint scaffold",
+        "summary": "Issue a new access/refresh token pair",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refreshToken": { "type": "string" }
+                },
+                "required": ["refreshToken"]
+              }
+            }
+          }
+        },
         "responses": {
-          "501": { "description": "Not implemented yet" }
+          "200": { "description": "Token pair refreshed" },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Invalid/expired token" }
         }
       }
     },
     "/api/v2/me": {
       "get": {
         "tags": ["Me"],
-        "summary": "Authenticated user profile scaffold",
+        "summary": "Get authenticated user profile",
         "parameters": [
-          { "name": "x-user-id", "in": "header", "required": true, "schema": { "type": "integer" } }
+          { "name": "Authorization", "in": "header", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
+          "200": { "description": "Authenticated user profile" },
           "401": { "description": "Authentication required" },
-          "501": { "description": "Not implemented yet" }
+          "404": { "description": "User not found" }
         }
       }
     },

@@ -15,3 +15,22 @@ export const isoDateRangeSchema = z.object({
 });
 
 export const moneyAmountSchema = z.number().finite();
+
+export const authRegisterSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  email: z.email().toLowerCase(),
+  password: z.string().min(8).max(128),
+});
+
+export const authLoginSchema = z.object({
+  email: z.email().toLowerCase(),
+  password: z.string().min(1),
+});
+
+export const authRefreshSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+
+export type AuthRegisterInput = z.infer<typeof authRegisterSchema>;
+export type AuthLoginInput = z.infer<typeof authLoginSchema>;
+export type AuthRefreshInput = z.infer<typeof authRefreshSchema>;
