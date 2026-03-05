@@ -2,11 +2,13 @@ import { Hono } from 'hono'
 import { swaggerUI } from '@hono/swagger-ui'
 import { serveStatic } from '@hono/node-server/serve-static';
 import user from './routes/users.routes';
-import { HTTPException } from 'hono/http-exception';
 import account from './routes/account.routes';
 import categories from './routes/categories.routes';
 import transaction from './routes/transactions.routes';
 import budget from './routes/budget.routes';
+import v2 from './routes/v2.routes';
+import { AppError, renderError } from './libs/errors';
+import { jsonSuccess } from './libs/http';
 
 const app = new Hono()
 
@@ -19,7 +21,7 @@ app.get('/docs', swaggerUI({
 }));
 
 app.get('/', (c) => {
-    return c.text('Hello Hono!')
+    return jsonSuccess(c, { message: 'Hello Hono!' })
 });
 
 /**
@@ -30,12 +32,7 @@ app.get('/', (c) => {
  * @returns {Promise<Response>} JSON response with the error details.
  */
 app.onError((err, c) => {
-    const statusCode = err instanceof HTTPException ? err.status : 500;
-    // Return JSON error body and set the HTTP status code accordingly
-    return c.json({
-        statusCode,
-        message: err.message
-    }, statusCode);
+    return renderError(c, err);
 });
 
 /**
@@ -45,10 +42,11 @@ app.onError((err, c) => {
  * @returns {Promise<Response>} JSON response with the error details.
  */
 app.notFound((c) => {
-    return c.json({
-        statusCode: 404,
-        message: 'Not found'
-    }, 404);
+    return renderError(c, new AppError({
+        status: 404,
+        code: 'NOT_FOUND',
+        message: 'Not found',
+    }));
 });
 
 // Routes
@@ -57,5 +55,6 @@ app.route('/user', account);
 app.route('/category', categories);
 app.route('/user', transaction);
 app.route('/user', budget);
+app.route('/api/v2', v2);
 
 export default app;

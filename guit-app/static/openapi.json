@@ -9,7 +9,9 @@
     { "name": "Account", "description": "Account management" },
     { "name": "Budget", "description": "Budget management" },
     { "name": "Transaction", "description": "Transaction management" },
-    { "name": "Category", "description": "Category management" }
+    { "name": "Category", "description": "Category management" },
+    { "name": "Auth", "description": "Authentication endpoints (v2 scaffold)" },
+    { "name": "Me", "description": "Authenticated user endpoints (v2 scaffold)" }
   ],
   "paths": {
     "/user": {
@@ -384,6 +386,46 @@
         "responses": {
           "200": { "description": "Transaction deleted" },
           "404": { "description": "Transaction not found" }
+        }
+      }
+    },
+    "/api/v2/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register endpoint scaffold",
+        "responses": {
+          "501": { "description": "Not implemented yet" }
+        }
+      }
+    },
+    "/api/v2/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login endpoint scaffold",
+        "responses": {
+          "501": { "description": "Not implemented yet" }
+        }
+      }
+    },
+    "/api/v2/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Refresh token endpoint scaffold",
+        "responses": {
+          "501": { "description": "Not implemented yet" }
+        }
+      }
+    },
+    "/api/v2/me": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "Authenticated user profile scaffold",
+        "parameters": [
+          { "name": "x-user-id", "in": "header", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "401": { "description": "Authentication required" },
+          "501": { "description": "Not implemented yet" }
         }
       }
     },
