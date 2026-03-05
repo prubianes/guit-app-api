@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: guit-app
+    env:
+      DATABASE_URL: file:./prisma/dev.db
+      NODE_ENV: test
+      AUTH_JWT_SECRET: ci-test-secret
+      AUTH_JWT_ISSUER: guit-app-api
+      AUTH_JWT_AUDIENCE: guit-app-client
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+
+      - name: Apply migrations
+        run: pnpm prisma migrate deploy
+
+      - name: OpenAPI check
+        run: node -e "JSON.parse(require('fs').readFileSync('static/openapi.json','utf8')); console.log('openapi.json OK')"
+
+      - name: Typecheck
+        run: pnpm dlx typescript tsc --noEmit
+
+      - name: Test
+        run: pnpm run test

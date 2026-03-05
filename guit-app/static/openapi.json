@@ -98,7 +98,8 @@
               }
             }
           },
-          "409": { "description": "Email already exists" }
+          "409": { "description": "Email already exists" },
+          "429": { "description": "Too many requests" }
         }
       }
     },
@@ -119,7 +120,8 @@
                 "required": ["email", "password"]
               }
             }
-          }
+          },
+          "429": { "description": "Too many requests" }
         },
         "responses": {
           "200": {
@@ -182,7 +184,8 @@
         },
         "responses": {
           "200": { "description": "Token pair refreshed" },
-          "401": { "description": "Invalid/expired token" }
+          "401": { "description": "Invalid/expired token" },
+          "429": { "description": "Too many requests" }
         }
       }
     },

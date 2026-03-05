@@ -14,10 +14,27 @@ import {
 } from '../../libs/schemas';
 import { issueTokenPair, verifyRefreshToken } from '../../libs/tokens';
 import { getValidatedJson, validateJson } from '../../middleware/validate';
+import { authRateLimit } from '../../middleware/rate-limit';
 
 const authRoutes = new Hono();
 
-authRoutes.post('/register', validateJson(authRegisterSchema), async (c) => {
+function toPublicTokenResponse(tokens: {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: 'Bearer';
+  accessTokenExpiresIn: number;
+  refreshTokenExpiresIn: number;
+}) {
+  return {
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    tokenType: tokens.tokenType,
+    accessTokenExpiresIn: tokens.accessTokenExpiresIn,
+    refreshTokenExpiresIn: tokens.refreshTokenExpiresIn,
+  };
+}
+
+authRoutes.post('/register', authRateLimit(), validateJson(authRegisterSchema), async (c) => {
   const body = getValidatedJson<AuthRegisterInput>(c);
 
   try {
@@ -37,11 +54,20 @@ authRoutes.post('/register', validateJson(authRegisterSchema), async (c) => {
       },
     });
 
+    const tokenPair = await issueTokenPair(user.id);
+    await prisma.refreshSession.create({
+      data: {
+        userId: user.id,
+        tokenId: tokenPair.refreshTokenId,
+        expiresAt: tokenPair.refreshTokenExpiresAt,
+      },
+    });
+
     return jsonSuccess(
       c,
       {
         user,
-        tokens: await issueTokenPair(user.id),
+        tokens: toPublicTokenResponse(tokenPair),
       },
       { status: 201 }
     );
@@ -58,7 +84,7 @@ authRoutes.post('/register', validateJson(authRegisterSchema), async (c) => {
   }
 });
 
-authRoutes.post('/login', validateJson(authLoginSchema), async (c) => {
+authRoutes.post('/login', authRateLimit(), validateJson(authLoginSchema), async (c) => {
   const body = getValidatedJson<AuthLoginInput>(c);
 
   const user = await prisma.user.findUnique({
@@ -84,6 +110,15 @@ authRoutes.post('/login', validateJson(authLoginSchema), async (c) => {
     });
   }
 
+  const tokenPair = await issueTokenPair(user.id);
+  await prisma.refreshSession.create({
+    data: {
+      userId: user.id,
+      tokenId: tokenPair.refreshTokenId,
+      expiresAt: tokenPair.refreshTokenExpiresAt,
+    },
+  });
+
   return jsonSuccess(c, {
     user: {
       id: user.id,
@@ -92,13 +127,36 @@ authRoutes.post('/login', validateJson(authLoginSchema), async (c) => {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     },
-    tokens: await issueTokenPair(user.id),
+    tokens: toPublicTokenResponse(tokenPair),
   });
 });
 
-authRoutes.post('/refresh', validateJson(authRefreshSchema), async (c) => {
+authRoutes.post('/refresh', authRateLimit(), validateJson(authRefreshSchema), async (c) => {
   const body = getValidatedJson<AuthRefreshInput>(c);
   const tokenPayload = await verifyRefreshToken(body.refreshToken);
+
+  const session = await prisma.refreshSession.findUnique({
+    where: { tokenId: tokenPayload.tokenId },
+    select: {
+      id: true,
+      userId: true,
+      revokedAt: true,
+      expiresAt: true,
+    },
+  });
+
+  if (
+    !session ||
+    session.userId !== tokenPayload.sub ||
+    session.revokedAt !== null ||
+    session.expiresAt.getTime() <= Date.now()
+  ) {
+    throw new AppError({
+      status: 401,
+      code: 'INVALID_REFRESH_SESSION',
+      message: 'Refresh session is invalid or revoked',
+    });
+  }
 
   const user = await prisma.user.findUnique({
     where: { id: tokenPayload.sub },
@@ -113,8 +171,24 @@ authRoutes.post('/refresh', validateJson(authRefreshSchema), async (c) => {
     });
   }
 
+  const tokenPair = await issueTokenPair(user.id);
+  await prisma.$transaction(async (tx) => {
+    await tx.refreshSession.update({
+      where: { id: session.id },
+      data: { revokedAt: new Date() },
+    });
+
+    await tx.refreshSession.create({
+      data: {
+        userId: user.id,
+        tokenId: tokenPair.refreshTokenId,
+        expiresAt: tokenPair.refreshTokenExpiresAt,
+      },
+    });
+  });
+
   return jsonSuccess(c, {
-    tokens: await issueTokenPair(user.id),
+    tokens: toPublicTokenResponse(tokenPair),
   });
 });
 
