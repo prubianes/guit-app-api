@@ -12,7 +12,7 @@ describe('Category Routes', () => {
             type: 'Test Type',
         };
 
-        const response = await app.request('/category', {
+        const response = await app.request('/api/v2/categories', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -20,26 +20,26 @@ describe('Category Routes', () => {
             body: JSON.stringify(newCategory),
         });
         const responseBody = await response.json();
-        categoryId = responseBody.id;
-        expect(response.status).toBe(200);
-        expect(responseBody).toHaveProperty('id');
-        expect(responseBody.name).toBe(newCategory.name);
-        expect(responseBody.type).toBe(newCategory.type);
+        categoryId = responseBody.data.id;
+        expect(response.status).toBe(201);
+        expect(responseBody).toHaveProperty('data.id');
+        expect(responseBody.data.name).toBe(newCategory.name);
+        expect(responseBody.data.type).toBe(newCategory.type);
     });
 
     it('should retrieve all categories', async () => {
-        const response = await app.request('/category', { method: 'GET' });
+        const response = await app.request('/api/v2/categories', { method: 'GET' });
         expect(response.status).toBe(200);
         const responseBody = await response.json();
-        expect(Array.isArray(responseBody)).toBe(true);
+        expect(Array.isArray(responseBody.data)).toBe(true);
     });
 
     it('should retrieve a category by id', async () => {
-        const response = await app.request(`/category/${categoryId}`, { method: 'GET' });
+        const response = await app.request(`/api/v2/categories/${categoryId}`, { method: 'GET' });
 
         const responseBody = await response.json();
         expect(response.status).toBe(200);
-        expect(responseBody).toHaveProperty('id', categoryId);
+        expect(responseBody).toHaveProperty('data.id', categoryId);
     });
 
     it('should update a category by id', async () => {
@@ -48,7 +48,7 @@ describe('Category Routes', () => {
             type: 'Updated Type',
         };
 
-        const response = await app.request(`/category/${categoryId}`, {
+        const response = await app.request(`/api/v2/categories/${categoryId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -57,46 +57,46 @@ describe('Category Routes', () => {
         });
         expect(response.status).toBe(200);
         const responseBody = await response.json();
-        expect(responseBody.name).toBe(updatedData.name);
-        expect(responseBody.type).toBe(updatedData.type);
+        expect(responseBody.data.name).toBe(updatedData.name);
+        expect(responseBody.data.type).toBe(updatedData.type);
     });
 
     it('should delete a category by id', async () => {
-        const response = await app.request(`/category/${categoryId}`, { method: 'DELETE' });
+        const response = await app.request(`/api/v2/categories/${categoryId}`, { method: 'DELETE' });
 
         const responseBody = await response.json();
         expect(response.status).toBe(200);
-        expect(responseBody).toHaveProperty('id', categoryId);
+        expect(responseBody).toHaveProperty('data.id', categoryId);
     });
 });
 
 describe('Category Routes - error & validation branches', () => {
     it('returns 400 for invalid id on get', async () => {
-        const res = await app.request('/category/invalid');
+        const res = await app.request('/api/v2/categories/invalid');
         expect(res.status).toBe(400);
         const body = await res.json();
-        expect(body).toHaveProperty('message');
+        expect(body).toHaveProperty('error.code', 'VALIDATION_ERROR');
     });
 
     it('returns 404 when category not found', async () => {
-        const res = await app.request('/category/999999');
+        const res = await app.request('/api/v2/categories/999999');
         expect(res.status).toBe(404);
         const body = await res.json();
-        expect(body).toHaveProperty('message');
+        expect(body).toHaveProperty('error.code', 'CATEGORY_NOT_FOUND');
     });
 
     it('returns 400 for invalid id on delete', async () => {
-        const res = await app.request('/category/invalid', { method: 'DELETE' });
+        const res = await app.request('/api/v2/categories/invalid', { method: 'DELETE' });
         expect(res.status).toBe(400);
         const body = await res.json();
-        expect(body).toHaveProperty('message');
+        expect(body).toHaveProperty('error.code', 'VALIDATION_ERROR');
     });
 
     it('returns 500 when findMany throws', async () => {
         const originalFindMany = (prisma.category as any).findMany;
         (prisma.category as any).findMany = vi.fn().mockRejectedValueOnce(new Error('boom'));
 
-        const res = await app.request('/category');
+        const res = await app.request('/api/v2/categories');
         expect(res.status).toBe(500);
 
         (prisma.category as any).findMany = originalFindMany;
@@ -106,7 +106,7 @@ describe('Category Routes - error & validation branches', () => {
         const originalCreate = (prisma.category as any).create;
         (prisma.category as any).create = vi.fn().mockRejectedValueOnce(new Error('create-fail'));
 
-        const res = await app.request('/category', {
+        const res = await app.request('/api/v2/categories', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: 'X', type: 'Y' }),
@@ -121,7 +121,7 @@ describe('Category Routes - error & validation branches', () => {
         const originalUpdate = (prisma.category as any).update;
         (prisma.category as any).update = vi.fn().mockRejectedValueOnce(new Error('update-fail'));
 
-        const res = await app.request('/category/12345', {
+        const res = await app.request('/api/v2/categories/12345', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: 'X', type: 'Y' }),
@@ -136,7 +136,7 @@ describe('Category Routes - error & validation branches', () => {
         const originalDelete = (prisma.category as any).delete;
         (prisma.category as any).delete = vi.fn().mockRejectedValueOnce(new Error('delete-fail'));
 
-        const res = await app.request('/category/12345', { method: 'DELETE' });
+        const res = await app.request('/api/v2/categories/12345', { method: 'DELETE' });
         expect(res.status).toBe(500);
 
         (prisma.category as any).delete = originalDelete;

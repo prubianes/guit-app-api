@@ -40,7 +40,7 @@ beforeAll(async () => {
   userA = await registerFixture('v2-a');
   userB = await registerFixture('v2-b');
 
-  const categoryResponse = await app.request('/category', {
+  const categoryResponse = await app.request('/api/v2/categories', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -49,7 +49,7 @@ beforeAll(async () => {
     }),
   });
   const categoryBody = await categoryResponse.json();
-  categoryId = categoryBody.id;
+  categoryId = categoryBody.data.id;
 
   const accountAResponse = await app.request('/api/v2/me/accounts', {
     method: 'POST',
