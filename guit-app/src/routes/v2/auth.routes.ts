@@ -41,7 +41,7 @@ authRoutes.post('/register', validateJson(authRegisterSchema), async (c) => {
       c,
       {
         user,
-        tokens: issueTokenPair(user.id),
+        tokens: await issueTokenPair(user.id),
       },
       { status: 201 }
     );
@@ -92,13 +92,13 @@ authRoutes.post('/login', validateJson(authLoginSchema), async (c) => {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     },
-    tokens: issueTokenPair(user.id),
+    tokens: await issueTokenPair(user.id),
   });
 });
 
 authRoutes.post('/refresh', validateJson(authRefreshSchema), async (c) => {
   const body = getValidatedJson<AuthRefreshInput>(c);
-  const tokenPayload = verifyRefreshToken(body.refreshToken);
+  const tokenPayload = await verifyRefreshToken(body.refreshToken);
 
   const user = await prisma.user.findUnique({
     where: { id: tokenPayload.sub },
@@ -114,7 +114,7 @@ authRoutes.post('/refresh', validateJson(authRefreshSchema), async (c) => {
   }
 
   return jsonSuccess(c, {
-    tokens: issueTokenPair(user.id),
+    tokens: await issueTokenPair(user.id),
   });
 });
 

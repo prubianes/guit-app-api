@@ -14,26 +14,16 @@ export const requireAuth: MiddlewareHandler = async (c, next) => {
     ? authorization.slice('Bearer '.length)
     : undefined;
 
-  let userId: number | undefined;
-  if (bearerToken) {
-    const tokenPayload = verifyAccessToken(bearerToken);
-    userId = tokenPayload.sub;
-  } else {
-    // Backward-compatible fallback for scaffold and local manual testing.
-    const userIdHeader = c.req.header('x-user-id');
-    const parsedUserId = Number.parseInt(userIdHeader ?? '', 10);
-    if (Number.isInteger(parsedUserId) && parsedUserId > 0) {
-      userId = parsedUserId;
-    }
-  }
-
-  if (!userId) {
+  if (!bearerToken) {
     throw new AppError({
       status: 401,
       code: 'UNAUTHORIZED',
       message: 'Authentication required',
     });
   }
+
+  const tokenPayload = await verifyAccessToken(bearerToken);
+  const userId = tokenPayload.sub;
 
   c.set(AUTH_KEY, { userId } satisfies AuthContext);
   await next();

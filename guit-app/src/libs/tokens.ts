@@ -1,18 +1,19 @@
-import crypto from 'node:crypto';
+import { jwtVerify, SignJWT, errors } from 'jose';
 import { AppError } from './errors';
 
 type TokenType = 'access' | 'refresh';
 
 type TokenPayload = {
-  sub: number;
+  sub: string;
   type: TokenType;
   exp: number;
 };
 
 const TOKEN_ALG = 'HS256';
 
-function getTokenSecret() {
-  return process.env.AUTH_JWT_SECRET || 'dev-insecure-secret-change-me';
+function getTokenSecretBytes() {
+  const secret = process.env.AUTH_JWT_SECRET || 'dev-insecure-secret-change-me';
+  return new TextEncoder().encode(secret);
 }
 
 function getAccessTtlSeconds() {
@@ -23,111 +24,74 @@ function getRefreshTtlSeconds() {
   return Number.parseInt(process.env.AUTH_REFRESH_TTL_SECONDS ?? '604800', 10);
 }
 
-function base64UrlEncode(input: string | Buffer) {
-  return Buffer.from(input).toString('base64url');
-}
-
-function base64UrlDecode(input: string) {
-  return Buffer.from(input, 'base64url').toString('utf8');
-}
-
-function sign(input: string) {
-  return crypto.createHmac('sha256', getTokenSecret()).update(input).digest('base64url');
-}
-
-function createToken(type: TokenType, userId: number) {
-  const now = Math.floor(Date.now() / 1000);
+async function createToken(type: TokenType, userId: number) {
   const ttl = type === 'access' ? getAccessTtlSeconds() : getRefreshTtlSeconds();
-
-  const header = base64UrlEncode(JSON.stringify({ alg: TOKEN_ALG, typ: 'JWT' }));
-  const payload = base64UrlEncode(
-    JSON.stringify({
-      sub: userId,
-      type,
-      exp: now + ttl,
-    } satisfies TokenPayload)
-  );
-  const signature = sign(`${header}.${payload}`);
-
-  return `${header}.${payload}.${signature}`;
+  return new SignJWT({ type })
+    .setProtectedHeader({ alg: TOKEN_ALG, typ: 'JWT' })
+    .setSubject(String(userId))
+    .setIssuedAt()
+    .setExpirationTime(`${ttl}s`)
+    .sign(getTokenSecretBytes());
 }
 
-export function issueTokenPair(userId: number) {
+export async function issueTokenPair(userId: number) {
   return {
-    accessToken: createToken('access', userId),
-    refreshToken: createToken('refresh', userId),
+    accessToken: await createToken('access', userId),
+    refreshToken: await createToken('refresh', userId),
     tokenType: 'Bearer' as const,
     accessTokenExpiresIn: getAccessTtlSeconds(),
     refreshTokenExpiresIn: getRefreshTtlSeconds(),
   };
 }
 
-function constantTimeEqual(a: string, b: string) {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
+async function verifyRawToken(token: string): Promise<TokenPayload> {
+  try {
+    const { payload } = await jwtVerify(token, getTokenSecretBytes(), {
+      algorithms: [TOKEN_ALG],
+    });
 
-  if (left.length !== right.length) {
-    return false;
-  }
+    const subject = payload.sub;
+    const type = payload.type;
+    const exp = payload.exp;
 
-  return crypto.timingSafeEqual(left, right);
-}
+    if (
+      typeof subject !== 'string' ||
+      (type !== 'access' && type !== 'refresh') ||
+      typeof exp !== 'number'
+    ) {
+      throw new AppError({
+        status: 401,
+        code: 'INVALID_TOKEN',
+        message: 'Invalid token claims',
+      });
+    }
 
-function verifyRawToken(token: string): TokenPayload {
-  const parts = token.split('.');
+    return {
+      sub: subject,
+      type,
+      exp,
+    };
+  } catch (error) {
+    if (error instanceof AppError) throw error;
 
-  if (parts.length !== 3) {
+    if (error instanceof errors.JWTExpired) {
+      throw new AppError({
+        status: 401,
+        code: 'TOKEN_EXPIRED',
+        message: 'Token expired',
+      });
+    }
+
     throw new AppError({
       status: 401,
       code: 'INVALID_TOKEN',
       message: 'Invalid token',
     });
   }
-
-  const [header, payload, signature] = parts;
-  const expectedSignature = sign(`${header}.${payload}`);
-
-  if (!constantTimeEqual(signature, expectedSignature)) {
-    throw new AppError({
-      status: 401,
-      code: 'INVALID_TOKEN',
-      message: 'Invalid token signature',
-    });
-  }
-
-  let decoded: TokenPayload;
-  try {
-    decoded = JSON.parse(base64UrlDecode(payload)) as TokenPayload;
-  } catch {
-    throw new AppError({
-      status: 401,
-      code: 'INVALID_TOKEN',
-      message: 'Invalid token payload',
-    });
-  }
-
-  if (!decoded.sub || !decoded.exp || !decoded.type) {
-    throw new AppError({
-      status: 401,
-      code: 'INVALID_TOKEN',
-      message: 'Invalid token claims',
-    });
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (decoded.exp <= now) {
-    throw new AppError({
-      status: 401,
-      code: 'TOKEN_EXPIRED',
-      message: 'Token expired',
-    });
-  }
-
-  return decoded;
 }
 
-export function verifyAccessToken(token: string) {
-  const payload = verifyRawToken(token);
+export async function verifyAccessToken(token: string) {
+  const payload = await verifyRawToken(token);
   if (payload.type !== 'access') {
     throw new AppError({
       status: 401,
@@ -136,11 +100,23 @@ export function verifyAccessToken(token: string) {
     });
   }
 
-  return payload;
+  const userId = Number.parseInt(payload.sub, 10);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new AppError({
+      status: 401,
+      code: 'INVALID_TOKEN',
+      message: 'Invalid token subject',
+    });
+  }
+
+  return {
+    ...payload,
+    sub: userId,
+  };
 }
 
-export function verifyRefreshToken(token: string) {
-  const payload = verifyRawToken(token);
+export async function verifyRefreshToken(token: string) {
+  const payload = await verifyRawToken(token);
   if (payload.type !== 'refresh') {
     throw new AppError({
       status: 401,
@@ -149,5 +125,17 @@ export function verifyRefreshToken(token: string) {
     });
   }
 
-  return payload;
+  const userId = Number.parseInt(payload.sub, 10);
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new AppError({
+      status: 401,
+      code: 'INVALID_TOKEN',
+      message: 'Invalid token subject',
+    });
+  }
+
+  return {
+    ...payload,
+    sub: userId,
+  };
 }

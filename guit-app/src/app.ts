@@ -1,11 +1,7 @@
 import { Hono } from 'hono'
 import { swaggerUI } from '@hono/swagger-ui'
 import { serveStatic } from '@hono/node-server/serve-static';
-import user from './routes/users.routes';
-import account from './routes/account.routes';
 import categories from './routes/categories.routes';
-import transaction from './routes/transactions.routes';
-import budget from './routes/budget.routes';
 import v2 from './routes/v2.routes';
 import { AppError, renderError } from './libs/errors';
 import { jsonSuccess } from './libs/http';
@@ -50,11 +46,7 @@ app.notFound((c) => {
 });
 
 // Routes
-app.route('/user', user);
-app.route('/user', account);
 app.route('/category', categories);
-app.route('/user', transaction);
-app.route('/user', budget);
 app.route('/api/v2', v2);
 
 export default app;
