@@ -481,6 +481,280 @@
         }
       }
     },
+    "/api/v2/me/accounts": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "List authenticated user accounts",
+        "responses": {
+          "200": { "description": "List of accounts" },
+          "401": { "description": "Authentication required" }
+        }
+      },
+      "post": {
+        "tags": ["Me"],
+        "summary": "Create account for authenticated user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "type": { "type": "string" },
+                  "balance": { "type": "number" }
+                },
+                "required": ["name", "type", "balance"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Account created" },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Authentication required" }
+        }
+      }
+    },
+    "/api/v2/me/accounts/{accountId}": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "Get authenticated user account by id",
+        "parameters": [
+          { "name": "accountId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Account found" },
+          "401": { "description": "Authentication required" },
+          "404": { "description": "Account not found" }
+        }
+      },
+      "patch": {
+        "tags": ["Me"],
+        "summary": "Update authenticated user account by id",
+        "parameters": [
+          { "name": "accountId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "type": { "type": "string" },
+                  "balance": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Account updated" },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Authentication required" },
+          "404": { "description": "Account not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Me"],
+        "summary": "Delete authenticated user account by id",
+        "parameters": [
+          { "name": "accountId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Account deleted" },
+          "401": { "description": "Authentication required" },
+          "404": { "description": "Account not found" }
+        }
+      }
+    },
+    "/api/v2/me/transactions": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "List authenticated user transactions",
+        "responses": {
+          "200": { "description": "List of transactions" },
+          "401": { "description": "Authentication required" }
+        }
+      },
+      "post": {
+        "tags": ["Me"],
+        "summary": "Create transaction for authenticated user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "accountId": { "type": "integer" },
+                  "categoryId": { "type": "integer" },
+                  "amount": { "type": "number" },
+                  "type": { "type": "string", "enum": ["expense", "income"] },
+                  "date": { "type": "string", "format": "date-time" },
+                  "description": { "type": "string" }
+                },
+                "required": ["accountId", "categoryId", "amount", "type", "date"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Transaction created" },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Authentication required" },
+          "404": { "description": "Account or category not found" }
+        }
+      }
+    },
+    "/api/v2/me/transactions/{transactionId}": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "Get authenticated user transaction by id",
+        "parameters": [
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Transaction found" },
+          "401": { "description": "Authentication required" },
+          "404": { "description": "Transaction not found" }
+        }
+      },
+      "patch": {
+        "tags": ["Me"],
+        "summary": "Update authenticated user transaction by id",
+        "parameters": [
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "accountId": { "type": "integer" },
+                  "categoryId": { "type": "integer" },
+                  "amount": { "type": "number" },
+                  "type": { "type": "string", "enum": ["expense", "income"] },
+                  "date": { "type": "string", "format": "date-time" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Transaction updated" },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Authentication required" },
+          "404": { "description": "Transaction/account/category not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Me"],
+        "summary": "Delete authenticated user transaction by id",
+        "parameters": [
+          { "name": "transactionId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Transaction deleted" },
+          "401": { "description": "Authentication required" },
+          "404": { "description": "Transaction not found" }
+        }
+      }
+    },
+    "/api/v2/me/budgets": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "List authenticated user budgets",
+        "responses": {
+          "200": { "description": "List of budgets" },
+          "401": { "description": "Authentication required" }
+        }
+      },
+      "post": {
+        "tags": ["Me"],
+        "summary": "Create budget for authenticated user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "categoryId": { "type": "integer" },
+                  "amount": { "type": "number" },
+                  "period": { "type": "string" }
+                },
+                "required": ["categoryId", "amount", "period"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Budget created" },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Authentication required" }
+        }
+      }
+    },
+    "/api/v2/me/budgets/{budgetId}": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "Get authenticated user budget by id",
+        "parameters": [
+          { "name": "budgetId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Budget found" },
+          "401": { "description": "Authentication required" },
+          "404": { "description": "Budget not found" }
+        }
+      },
+      "patch": {
+        "tags": ["Me"],
+        "summary": "Update authenticated user budget by id",
+        "parameters": [
+          { "name": "budgetId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "categoryId": { "type": "integer" },
+                  "amount": { "type": "number" },
+                  "period": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Budget updated" },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Authentication required" },
+          "404": { "description": "Budget not found" }
+        }
+      },
+      "delete": {
+        "tags": ["Me"],
+        "summary": "Delete authenticated user budget by id",
+        "parameters": [
+          { "name": "budgetId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Budget deleted" },
+          "401": { "description": "Authentication required" },
+          "404": { "description": "Budget not found" }
+        }
+      }
+    },
     "/category": {
       "post": {
         "tags": ["Category"],
