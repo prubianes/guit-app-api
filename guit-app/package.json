@@ -2,8 +2,9 @@
   "name": "guit-app",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "test": "vitest --sequence.concurrent=false",
-    "coverage": "vitest run --coverage --sequence.concurrent=false"
+    "test:prepare": "NODE_ENV=test pnpm exec prisma db push",
+    "test": "pnpm run test:prepare && NODE_ENV=test vitest --sequence.concurrent=false",
+    "coverage": "pnpm run test:prepare && NODE_ENV=test vitest run --coverage --sequence.concurrent=false"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
