@@ -20,7 +20,7 @@ Prerequisites
 
 - Node.js 16+ (LTS recommended)
 - pnpm (https://pnpm.io/) installed globally (or use `npx`/`corepack`)
-- PostgreSQL (or another supported database) for local development
+- SQLite (default) or another Prisma-supported database for local development
 
 Quick start
 
@@ -109,7 +109,7 @@ pnpm run dev
 Open the API
 
 - Visit `http://localhost:3000` to access the app.
-- The OpenAPI spec is available at `static/openapi.json` — to view it with Swagger UI, open https://petstore.swagger.io/ and paste the URL `http://localhost:3000/static/openapi.json` (or open the local file in Redoc).
+- The OpenAPI spec is available at `/openapi.json` and Swagger UI at `/docs`.
 
 Production
 
@@ -155,6 +155,7 @@ erDiagram
     }
     CATEGORY {
         int id
+        int userId
         string name
         string type
     }
@@ -181,6 +182,7 @@ erDiagram
     }
 
     USER ||--o{ ACCOUNT : "has"
+    USER ||--o{ CATEGORY : "has"
     USER ||--o{ TRANSACTION : "has"
     USER ||--o{ BUDGET : "has"
     ACCOUNT ||--o{ TRANSACTION : "has"
@@ -190,70 +192,85 @@ erDiagram
 
 ## API Endpoints
 
-### Users
-- `GET /user` - Retrieve all users
-- `GET /user/:id` - Retrieve a user by ID
-- `POST /user` - Create a new user
-- `PUT /user/:id` - Update a user by ID
-- `DELETE /user/:id` - Delete a user by ID
+### Hard Cutover Status
+- Legacy `/user/*` endpoints are removed from the running app.
+- `v2` endpoints under `/api/v2/*` are the supported contract.
 
-### Accounts
-- `GET /user/:id/account` - Retrieve all accounts for a user
-- `GET /user/:id/account/:accountId` - Retrieve an account by ID
-- `POST /user/:id/account` - Create a new account
-- `PUT /user/:id/account/:accountId` - Update an account by ID
-- `DELETE /user/:id/account/:accountId` - Delete an account by ID
+### Authentication (`/api/v2/auth`)
+- `POST /api/v2/auth/register` - Register and receive access/refresh tokens
+- `POST /api/v2/auth/login` - Login and receive access/refresh tokens
+- `POST /api/v2/auth/refresh` - Exchange refresh token for a new token pair
 
-### Categories
-- `GET /category` - Retrieve all categories
-- `GET /category/:id` - Retrieve a category by ID
-- `POST /category` - Create a new category
-- `PUT /category/:id` - Update a category by ID
-- `DELETE /category/:id` - Delete a category by ID
+### Authenticated User (`/api/v2/me`)
+- `GET /api/v2/me` - Get authenticated profile
 
-### Transactions
-- `GET /user/:id/transactions` - Retrieve all transactions for a user
-- `GET /user/:id/transactions/:transactionId` - Retrieve a transaction by ID
-- `POST /user/:id/transactions` - Create a new transaction
-- `PUT /user/:id/transactions/:transactionId` - Update a transaction by ID
-- `DELETE /user/:id/transactions/:transactionId` - Delete a transaction by ID
+### Accounts (`/api/v2/me/accounts`)
+- `GET /api/v2/me/accounts`
+- `POST /api/v2/me/accounts`
+- `GET /api/v2/me/accounts/:accountId`
+- `PATCH /api/v2/me/accounts/:accountId`
+- `DELETE /api/v2/me/accounts/:accountId`
 
-### Budgets
-- `GET /user/:id/budget` - Retrieve all budgets for a user
-- `GET /user/:id/budget/:budgetId` - Retrieve a budget by ID
-- `POST /user/:id/budget` - Create a new budget
-- `PUT /user/:id/budget/:budgetId` - Update a budget by ID
-- `DELETE /user/:id/budget/:budgetId` - Delete a budget by ID
+### Transactions (`/api/v2/me/transactions`)
+- `GET /api/v2/me/transactions`
+- `POST /api/v2/me/transactions`
+- `GET /api/v2/me/transactions/:transactionId`
+- `PATCH /api/v2/me/transactions/:transactionId`
+- `DELETE /api/v2/me/transactions/:transactionId`
+
+### Budgets (`/api/v2/me/budgets`)
+- `GET /api/v2/me/budgets`
+- `POST /api/v2/me/budgets`
+- `GET /api/v2/me/budgets/:budgetId`
+- `PATCH /api/v2/me/budgets/:budgetId`
+- `DELETE /api/v2/me/budgets/:budgetId`
+
+### Categories (`/api/v2/me/categories`)
+- `GET /api/v2/me/categories`
+- `POST /api/v2/me/categories`
+- `GET /api/v2/me/categories/:categoryId`
+- `PUT /api/v2/me/categories/:categoryId`
+- `DELETE /api/v2/me/categories/:categoryId`
+
+### Migration Map (legacy -> v2)
+- `/user/:id/account` -> `/api/v2/me/accounts`
+- `/user/:id/account/:accountId` -> `/api/v2/me/accounts/:accountId`
+- `/user/:id/transactions` -> `/api/v2/me/transactions`
+- `/user/:id/transactions/:transactionId` -> `/api/v2/me/transactions/:transactionId`
+- `/user/:id/budget` -> `/api/v2/me/budgets`
+- `/user/:id/budget/:budgetId` -> `/api/v2/me/budgets/:budgetId`
 
 ## API Examples
 
 Here are a few quick `curl` examples to get started. These assume the server is running on `http://localhost:3000`.
 
-- Create a user
+- Register and get tokens
 
 ```bash
-curl -s -X POST http://localhost:3000/user \
+curl -s -X POST http://localhost:3000/api/v2/auth/register \
     -H "Content-Type: application/json" \
-    -d '{"name":"Alice","email":"alice@example.com","password":"secret"}'
+    -d '{"name":"Alice","email":"alice@example.com","password":"password123"}'
 ```
 
-- List a user's transactions
+- Read authenticated profile
 
 ```bash
-curl -s http://localhost:3000/user/1/transactions
+curl -s http://localhost:3000/api/v2/me \
+    -H "Authorization: Bearer <access_token>"
 ```
 
-- Create a transaction for a user
+- Create a transaction
 
 ```bash
-curl -s -X POST http://localhost:3000/user/1/transactions \
+curl -s -X POST http://localhost:3000/api/v2/me/transactions \
+    -H "Authorization: Bearer <access_token>" \
     -H "Content-Type: application/json" \
-    -d '{"accountId":1,"categoryId":2,"amount":-12.50,"type":"expense","date":"2025-12-01","description":"Lunch"}'
+    -d '{"accountId":1,"categoryId":2,"amount":12.50,"type":"expense","date":"2025-12-01T12:00:00.000Z","description":"Lunch"}'
 ```
 
 OpenAPI / Swagger
 
-- The JSON OpenAPI spec is available at `static/openapi.json` (local file) or served at `http://localhost:3000/static/openapi.json` when running the app. To view it quickly use https://petstore.swagger.io/ or Redoc.
+- The JSON OpenAPI spec is served at `http://localhost:3000/openapi.json` and Swagger UI at `http://localhost:3000/docs`.
 
 
 ## Environment Variables
@@ -298,7 +315,7 @@ pnpm run test
 
 GitHub Actions (example)
 
-An example CI workflow is provided at `.github/workflows/ci.yml`. It installs dependencies, starts a PostgreSQL service, generates the Prisma client, and runs the test suite.
+An example CI workflow is provided at `.github/workflows/ci.yml`. It installs dependencies, prepares Prisma, and runs the test suite.
 
 Basic checklist for CI
 
