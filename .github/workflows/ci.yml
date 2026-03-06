@@ -45,7 +45,7 @@ jobs:
         run: node -e "JSON.parse(require('fs').readFileSync('static/openapi.json','utf8')); console.log('openapi.json OK')"
 
       - name: Typecheck
-        run: pnpm dlx typescript tsc --noEmit
+        run: pnpm --package=typescript dlx tsc --noEmit
 
       - name: Test
         run: pnpm run test
