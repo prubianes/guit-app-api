@@ -1,144 +1,205 @@
 import app from '../app';
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { prisma } from '../libs/prisma';
 
+type AuthFixture = {
+  userId: number;
+  accessToken: string;
+  email: string;
+};
+
+let userA: AuthFixture;
+let userB: AuthFixture;
 let categoryId: number;
 
-describe('Category Routes', () => {
+async function registerFixture(prefix: string): Promise<AuthFixture> {
+  const email = `${prefix}-${Date.now()}@example.com`;
+  const response = await app.request('/api/v2/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: prefix,
+      email,
+      password: 'password123',
+    }),
+  });
 
-    it('should create a new category', async () => {
-        const newCategory = {
-            name: 'Test Category',
-            type: 'Test Type',
-        };
+  const body = await response.json();
+  return {
+    userId: body.data.user.id,
+    accessToken: body.data.tokens.accessToken,
+    email,
+  };
+}
 
-        const response = await app.request('/api/v2/categories', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(newCategory),
-        });
-        const responseBody = await response.json();
-        categoryId = responseBody.data.id;
-        expect(response.status).toBe(201);
-        expect(responseBody).toHaveProperty('data.id');
-        expect(responseBody.data.name).toBe(newCategory.name);
-        expect(responseBody.data.type).toBe(newCategory.type);
-    });
+function authHeaders(token: string) {
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${token}`,
+  };
+}
 
-    it('should retrieve all categories', async () => {
-        const response = await app.request('/api/v2/categories', { method: 'GET' });
-        expect(response.status).toBe(200);
-        const responseBody = await response.json();
-        expect(Array.isArray(responseBody.data)).toBe(true);
-    });
-
-    it('should retrieve a category by id', async () => {
-        const response = await app.request(`/api/v2/categories/${categoryId}`, { method: 'GET' });
-
-        const responseBody = await response.json();
-        expect(response.status).toBe(200);
-        expect(responseBody).toHaveProperty('data.id', categoryId);
-    });
-
-    it('should update a category by id', async () => {
-        const updatedData = {
-            name: 'Updated Category',
-            type: 'Updated Type',
-        };
-
-        const response = await app.request(`/api/v2/categories/${categoryId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updatedData),
-        });
-        expect(response.status).toBe(200);
-        const responseBody = await response.json();
-        expect(responseBody.data.name).toBe(updatedData.name);
-        expect(responseBody.data.type).toBe(updatedData.type);
-    });
-
-    it('should delete a category by id', async () => {
-        const response = await app.request(`/api/v2/categories/${categoryId}`, { method: 'DELETE' });
-
-        const responseBody = await response.json();
-        expect(response.status).toBe(200);
-        expect(responseBody).toHaveProperty('data.id', categoryId);
-    });
+beforeAll(async () => {
+  userA = await registerFixture('cat-a');
+  userB = await registerFixture('cat-b');
 });
 
-describe('Category Routes - error & validation branches', () => {
-    it('returns 400 for invalid id on get', async () => {
-        const res = await app.request('/api/v2/categories/invalid');
-        expect(res.status).toBe(400);
-        const body = await res.json();
-        expect(body).toHaveProperty('error.code', 'VALIDATION_ERROR');
+afterAll(async () => {
+  await prisma.transaction.deleteMany({
+    where: { userId: { in: [userA?.userId, userB?.userId].filter(Boolean) as number[] } },
+  });
+  await prisma.budget.deleteMany({
+    where: { userId: { in: [userA?.userId, userB?.userId].filter(Boolean) as number[] } },
+  });
+  await prisma.category.deleteMany({
+    where: { userId: { in: [userA?.userId, userB?.userId].filter(Boolean) as number[] } },
+  });
+  await prisma.account.deleteMany({
+    where: { userId: { in: [userA?.userId, userB?.userId].filter(Boolean) as number[] } },
+  });
+  await prisma.user.deleteMany({
+    where: { id: { in: [userA?.userId, userB?.userId].filter(Boolean) as number[] } },
+  });
+});
+
+describe('V2 me/categories routes', () => {
+  it('requires auth', async () => {
+    const response = await app.request('/api/v2/me/categories', { method: 'GET' });
+    expect(response.status).toBe(401);
+    const body = await response.json();
+    expect(body).toHaveProperty('error.code', 'UNAUTHORIZED');
+  });
+
+  it('creates category for the authenticated user', async () => {
+    const response = await app.request('/api/v2/me/categories', {
+      method: 'POST',
+      headers: authHeaders(userA.accessToken),
+      body: JSON.stringify({
+        name: 'Food',
+        type: 'expense',
+      }),
     });
 
-    it('returns 404 when category not found', async () => {
-        const res = await app.request('/api/v2/categories/999999');
-        expect(res.status).toBe(404);
-        const body = await res.json();
-        expect(body).toHaveProperty('error.code', 'CATEGORY_NOT_FOUND');
+    const body = await response.json();
+    categoryId = body.data.id;
+    expect(response.status).toBe(201);
+    expect(body).toHaveProperty('data.name', 'Food');
+    expect(body).toHaveProperty('data.type', 'expense');
+    expect(body).toHaveProperty('data.userId', userA.userId);
+  });
+
+  it('lists only own categories', async () => {
+    await app.request('/api/v2/me/categories', {
+      method: 'POST',
+      headers: authHeaders(userB.accessToken),
+      body: JSON.stringify({
+        name: 'Salary',
+        type: 'income',
+      }),
     });
 
-    it('returns 400 for invalid id on delete', async () => {
-        const res = await app.request('/api/v2/categories/invalid', { method: 'DELETE' });
-        expect(res.status).toBe(400);
-        const body = await res.json();
-        expect(body).toHaveProperty('error.code', 'VALIDATION_ERROR');
+    const response = await app.request('/api/v2/me/categories', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${userA.accessToken}`,
+      },
+    });
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data.every((category: { userId: number }) => category.userId === userA.userId)).toBe(true);
+  });
+
+  it('prevents duplicate category name/type per user', async () => {
+    const response = await app.request('/api/v2/me/categories', {
+      method: 'POST',
+      headers: authHeaders(userA.accessToken),
+      body: JSON.stringify({
+        name: 'Food',
+        type: 'expense',
+      }),
     });
 
-    it('returns 500 when findMany throws', async () => {
-        const originalFindMany = (prisma.category as any).findMany;
-        (prisma.category as any).findMany = vi.fn().mockRejectedValueOnce(new Error('boom'));
+    expect(response.status).toBe(409);
+    const body = await response.json();
+    expect(body).toHaveProperty('error.code', 'CATEGORY_ALREADY_EXISTS');
+  });
 
-        const res = await app.request('/api/v2/categories');
-        expect(res.status).toBe(500);
-
-        (prisma.category as any).findMany = originalFindMany;
+  it('allows same category name/type for another user', async () => {
+    const response = await app.request('/api/v2/me/categories', {
+      method: 'POST',
+      headers: authHeaders(userB.accessToken),
+      body: JSON.stringify({
+        name: 'Food',
+        type: 'expense',
+      }),
     });
 
-    it('returns 500 when create fails', async () => {
-        const originalCreate = (prisma.category as any).create;
-        (prisma.category as any).create = vi.fn().mockRejectedValueOnce(new Error('create-fail'));
+    expect(response.status).toBe(201);
+  });
 
-        const res = await app.request('/api/v2/categories', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: 'X', type: 'Y' }),
-        });
+  it('retrieves, updates and deletes own category', async () => {
+    const getResponse = await app.request(`/api/v2/me/categories/${categoryId}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${userA.accessToken}`,
+      },
+    });
+    expect(getResponse.status).toBe(200);
 
-        expect(res.status).toBe(500);
+    const updateResponse = await app.request(`/api/v2/me/categories/${categoryId}`, {
+      method: 'PUT',
+      headers: authHeaders(userA.accessToken),
+      body: JSON.stringify({
+        name: 'Groceries',
+      }),
+    });
+    expect(updateResponse.status).toBe(200);
+    const updateBody = await updateResponse.json();
+    expect(updateBody).toHaveProperty('data.name', 'Groceries');
 
-        (prisma.category as any).create = originalCreate;
+    const deleteResponse = await app.request(`/api/v2/me/categories/${categoryId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${userA.accessToken}`,
+      },
+    });
+    expect(deleteResponse.status).toBe(200);
+  });
+
+  it('returns 404 when accessing another user category', async () => {
+    const createResponse = await app.request('/api/v2/me/categories', {
+      method: 'POST',
+      headers: authHeaders(userA.accessToken),
+      body: JSON.stringify({
+        name: 'Transport',
+        type: 'expense',
+      }),
+    });
+    const createBody = await createResponse.json();
+    const userACategoryId = createBody.data.id;
+
+    const response = await app.request(`/api/v2/me/categories/${userACategoryId}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${userB.accessToken}`,
+      },
+    });
+    expect(response.status).toBe(404);
+    const body = await response.json();
+    expect(body).toHaveProperty('error.code', 'CATEGORY_NOT_FOUND');
+  });
+
+  it('returns validation error for invalid id', async () => {
+    const response = await app.request('/api/v2/me/categories/not-a-number', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${userA.accessToken}`,
+      },
     });
 
-    it('returns 500 when update fails', async () => {
-        const originalUpdate = (prisma.category as any).update;
-        (prisma.category as any).update = vi.fn().mockRejectedValueOnce(new Error('update-fail'));
-
-        const res = await app.request('/api/v2/categories/12345', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: 'X', type: 'Y' }),
-        });
-
-        expect(res.status).toBe(500);
-
-        (prisma.category as any).update = originalUpdate;
-    });
-
-    it('returns 500 when delete fails', async () => {
-        const originalDelete = (prisma.category as any).delete;
-        (prisma.category as any).delete = vi.fn().mockRejectedValueOnce(new Error('delete-fail'));
-
-        const res = await app.request('/api/v2/categories/12345', { method: 'DELETE' });
-        expect(res.status).toBe(500);
-
-        (prisma.category as any).delete = originalDelete;
-    });
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body).toHaveProperty('error.code', 'VALIDATION_ERROR');
+  });
 });

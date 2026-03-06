@@ -34,6 +34,22 @@ meBudgetRoutes.post('/budgets', requireAuth, validateJson(budgetCreateSchema), a
   const auth = getAuth(c);
   const body = getValidatedJson<BudgetCreateInput>(c);
 
+  const category = await prisma.category.findFirst({
+    where: {
+      id: body.categoryId,
+      userId: auth.userId,
+    },
+    select: { id: true },
+  });
+
+  if (!category) {
+    throw new AppError({
+      status: 404,
+      code: 'CATEGORY_NOT_FOUND',
+      message: 'Category not found',
+    });
+  }
+
   const budget = await prisma.budget.create({
     data: {
       userId: auth.userId,
@@ -92,6 +108,24 @@ meBudgetRoutes.patch(
         code: 'BUDGET_NOT_FOUND',
         message: 'Budget not found',
       });
+    }
+
+    if (body.categoryId !== undefined) {
+      const category = await prisma.category.findFirst({
+        where: {
+          id: body.categoryId,
+          userId: auth.userId,
+        },
+        select: { id: true },
+      });
+
+      if (!category) {
+        throw new AppError({
+          status: 404,
+          code: 'CATEGORY_NOT_FOUND',
+          message: 'Category not found',
+        });
+      }
     }
 
     const budget = await prisma.budget.update({

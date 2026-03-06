@@ -13,6 +13,6 @@ v2.route('/me', meProfileRoutes);
 v2.route('/me', meAccountRoutes);
 v2.route('/me', meBudgetRoutes);
 v2.route('/me', meTransactionRoutes);
-v2.route('/', categoryRoutes);
+v2.route('/me', categoryRoutes);
 
 export default v2;

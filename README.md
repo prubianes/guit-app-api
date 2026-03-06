@@ -155,6 +155,7 @@ erDiagram
     }
     CATEGORY {
         int id
+        int userId
         string name
         string type
     }
@@ -181,6 +182,7 @@ erDiagram
     }
 
     USER ||--o{ ACCOUNT : "has"
+    USER ||--o{ CATEGORY : "has"
     USER ||--o{ TRANSACTION : "has"
     USER ||--o{ BUDGET : "has"
     ACCOUNT ||--o{ TRANSACTION : "has"
@@ -223,12 +225,12 @@ erDiagram
 - `PATCH /api/v2/me/budgets/:budgetId`
 - `DELETE /api/v2/me/budgets/:budgetId`
 
-### Categories (shared catalog)
-- `GET /category`
-- `GET /category/:id`
-- `POST /category`
-- `PUT /category/:id`
-- `DELETE /category/:id`
+### Categories (`/api/v2/me/categories`)
+- `GET /api/v2/me/categories`
+- `POST /api/v2/me/categories`
+- `GET /api/v2/me/categories/:categoryId`
+- `PUT /api/v2/me/categories/:categoryId`
+- `DELETE /api/v2/me/categories/:categoryId`
 
 ### Migration Map (legacy -> v2)
 - `/user/:id/account` -> `/api/v2/me/accounts`

@@ -50,8 +50,11 @@ meTransactionRoutes.post('/transactions', requireAuth, validateJson(transactionC
     });
   }
 
-  const category = await prisma.category.findUnique({
-    where: { id: body.categoryId },
+  const category = await prisma.category.findFirst({
+    where: {
+      id: body.categoryId,
+      userId: auth.userId,
+    },
     select: { id: true },
   });
 
@@ -164,8 +167,11 @@ meTransactionRoutes.patch(
       });
     }
 
-    const category = await prisma.category.findUnique({
-      where: { id: nextCategoryId },
+    const category = await prisma.category.findFirst({
+      where: {
+        id: nextCategoryId,
+        userId: auth.userId,
+      },
       select: { id: true },
     });
 

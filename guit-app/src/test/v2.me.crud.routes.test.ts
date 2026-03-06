@@ -44,9 +44,12 @@ function authHeaders(token: string) {
 beforeAll(async () => {
   user = await registerFixture('v2-crud');
 
-  const categoryResponse = await app.request('/api/v2/categories', {
+  const categoryResponse = await app.request('/api/v2/me/categories', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${user.accessToken}`,
+    },
     body: JSON.stringify({
       name: `v2-crud-cat-${Date.now()}`,
       type: 'income',
@@ -184,6 +187,19 @@ describe('V2 /me CRUD and failure paths', () => {
   });
 
   it('creates, reads, updates and deletes budget', async () => {
+    const invalidCategoryCreateResponse = await app.request('/api/v2/me/budgets', {
+      method: 'POST',
+      headers: authHeaders(user.accessToken),
+      body: JSON.stringify({
+        categoryId: 999999,
+        amount: 100,
+        period: 'monthly',
+      }),
+    });
+    expect(invalidCategoryCreateResponse.status).toBe(404);
+    const invalidCategoryCreateBody = await invalidCategoryCreateResponse.json();
+    expect(invalidCategoryCreateBody).toHaveProperty('error.code', 'CATEGORY_NOT_FOUND');
+
     const createResponse = await app.request('/api/v2/me/budgets', {
       method: 'POST',
       headers: authHeaders(user.accessToken),
@@ -223,6 +239,17 @@ describe('V2 /me CRUD and failure paths', () => {
     expect(patchResponse.status).toBe(200);
     const patchBody = await patchResponse.json();
     expect(patchBody).toHaveProperty('data.amount', 250);
+
+    const patchInvalidCategoryResponse = await app.request(`/api/v2/me/budgets/${budgetId}`, {
+      method: 'PATCH',
+      headers: authHeaders(user.accessToken),
+      body: JSON.stringify({
+        categoryId: 999999,
+      }),
+    });
+    expect(patchInvalidCategoryResponse.status).toBe(404);
+    const patchInvalidCategoryBody = await patchInvalidCategoryResponse.json();
+    expect(patchInvalidCategoryBody).toHaveProperty('error.code', 'CATEGORY_NOT_FOUND');
 
     const invalidPatchResponse = await app.request(`/api/v2/me/budgets/${budgetId}`, {
       method: 'PATCH',

@@ -11,6 +11,7 @@ import {
   type CategoryIdParam,
   type CategoryUpdateInput,
 } from '../../libs/schemas';
+import { getAuth, requireAuth } from '../../middleware/auth';
 import {
   getValidatedJson,
   getValidatedParams,
@@ -20,30 +21,51 @@ import {
 
 const categoryRoutes = new Hono();
 
-categoryRoutes.get('/categories', async (c) => {
+categoryRoutes.get('/categories', requireAuth, async (c) => {
+  const auth = getAuth(c);
   const categories = await prisma.category.findMany({
+    where: { userId: auth.userId },
     orderBy: { id: 'asc' },
   });
 
   return jsonSuccess(c, categories);
 });
 
-categoryRoutes.post('/categories', validateJson(categoryCreateSchema), async (c) => {
+categoryRoutes.post('/categories', requireAuth, validateJson(categoryCreateSchema), async (c) => {
+  const auth = getAuth(c);
   const body = getValidatedJson<CategoryCreateInput>(c);
-  const category = await prisma.category.create({
-    data: {
-      name: body.name,
-      type: body.type,
-    },
-  });
 
-  return jsonSuccess(c, category, { status: 201 });
+  try {
+    const category = await prisma.category.create({
+      data: {
+        userId: auth.userId,
+        name: body.name,
+        type: body.type,
+      },
+    });
+
+    return jsonSuccess(c, category, { status: 201 });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new AppError({
+        status: 409,
+        code: 'CATEGORY_ALREADY_EXISTS',
+        message: 'Category already exists',
+      });
+    }
+
+    throw error;
+  }
 });
 
-categoryRoutes.get('/categories/:categoryId', validateParams(categoryIdParamSchema), async (c) => {
+categoryRoutes.get('/categories/:categoryId', requireAuth, validateParams(categoryIdParamSchema), async (c) => {
+  const auth = getAuth(c);
   const params = getValidatedParams<CategoryIdParam>(c);
-  const category = await prisma.category.findUnique({
-    where: { id: params.categoryId },
+  const category = await prisma.category.findFirst({
+    where: {
+      id: params.categoryId,
+      userId: auth.userId,
+    },
   });
 
   if (!category) {
@@ -59,15 +81,33 @@ categoryRoutes.get('/categories/:categoryId', validateParams(categoryIdParamSche
 
 categoryRoutes.put(
   '/categories/:categoryId',
+  requireAuth,
   validateParams(categoryIdParamSchema),
   validateJson(categoryUpdateSchema),
   async (c) => {
+    const auth = getAuth(c);
     const params = getValidatedParams<CategoryIdParam>(c);
     const body = getValidatedJson<CategoryUpdateInput>(c);
 
+    const existingCategory = await prisma.category.findFirst({
+      where: {
+        id: params.categoryId,
+        userId: auth.userId,
+      },
+      select: { id: true },
+    });
+
+    if (!existingCategory) {
+      throw new AppError({
+        status: 404,
+        code: 'CATEGORY_NOT_FOUND',
+        message: 'Category not found',
+      });
+    }
+
     try {
       const category = await prisma.category.update({
-        where: { id: params.categoryId },
+        where: { id: existingCategory.id },
         data: {
           name: body.name,
           type: body.type,
@@ -76,11 +116,11 @@ categoryRoutes.put(
 
       return jsonSuccess(c, category);
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new AppError({
-          status: 404,
-          code: 'CATEGORY_NOT_FOUND',
-          message: 'Category not found',
+          status: 409,
+          code: 'CATEGORY_ALREADY_EXISTS',
+          message: 'Category already exists',
         });
       }
 
@@ -89,17 +129,23 @@ categoryRoutes.put(
   }
 );
 
-categoryRoutes.delete('/categories/:categoryId', validateParams(categoryIdParamSchema), async (c) => {
+categoryRoutes.delete(
+  '/categories/:categoryId',
+  requireAuth,
+  validateParams(categoryIdParamSchema),
+  async (c) => {
+    const auth = getAuth(c);
   const params = getValidatedParams<CategoryIdParam>(c);
 
-  try {
-    const category = await prisma.category.delete({
-      where: { id: params.categoryId },
+    const existingCategory = await prisma.category.findFirst({
+      where: {
+        id: params.categoryId,
+        userId: auth.userId,
+      },
+      select: { id: true },
     });
 
-    return jsonSuccess(c, category);
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+    if (!existingCategory) {
       throw new AppError({
         status: 404,
         code: 'CATEGORY_NOT_FOUND',
@@ -107,8 +153,12 @@ categoryRoutes.delete('/categories/:categoryId', validateParams(categoryIdParamS
       });
     }
 
-    throw error;
+    const category = await prisma.category.delete({
+      where: { id: existingCategory.id },
+    });
+
+    return jsonSuccess(c, category);
   }
-});
+);
 
 export default categoryRoutes;

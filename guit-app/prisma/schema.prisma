@@ -20,6 +20,7 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   accounts  Account[]
+  categories Category[]
   transactions Transaction[]
   budgets    Budget[]
   refreshSessions RefreshSession[]
@@ -39,10 +40,15 @@ model Account {
 
 model Category {
   id    Int       @id @default(autoincrement())
+  userId Int
   name  String
   type  String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
   budgets    Budget[]
+
+  @@unique([userId, name, type])
+  @@index([userId])
 }
 
 model Transaction {

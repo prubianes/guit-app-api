@@ -40,9 +40,12 @@ beforeAll(async () => {
   userA = await registerFixture('v2-a');
   userB = await registerFixture('v2-b');
 
-  const categoryResponse = await app.request('/api/v2/categories', {
+  const categoryResponse = await app.request('/api/v2/me/categories', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${userA.accessToken}`,
+    },
     body: JSON.stringify({
       name: `v2-cat-${Date.now()}`,
       type: 'expense',
